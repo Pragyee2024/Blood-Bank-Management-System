@@ -1,0 +1,7 @@
+# Never commit real credentials
+config.php
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
+.vscode/
