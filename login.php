@@ -1,0 +1,84 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__ . '/connect.php';
+require_once __DIR__ . '/includes/auth.php';
+header('Content-Type: text/html; charset=UTF-8'); // override connect.php's JSON header — this page renders HTML
+
+$error = '';
+
+if ($u = current_user()) {
+    header('Location: ' . role_home($u['role']));
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+
+    if ($username === '' || $password === '') {
+        $error = 'Please enter both username and password.';
+    } else {
+        $db = getDB();
+        $stmt = $db->prepare('SELECT user_id, username, password_hash, role, donor_id FROM app_user WHERE username = :username');
+        $stmt->execute(['username' => $username]);
+        $user = $stmt->fetch();
+
+        if ($user && password_verify($password, $user['password_hash'])) {
+            session_regenerate_id(true);
+            $_SESSION['user_id']  = $user['user_id'];
+            $_SESSION['username'] = $user['username'];
+            $_SESSION['role']     = $user['role'];
+            $_SESSION['donor_id'] = $user['donor_id'];
+
+            header('Location: ' . role_home($user['role']));
+            exit;
+        }
+
+        $error = 'Invalid username or password.';
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Login — Blood Bank Management System</title>
+<style>
+    body { font-family: Arial, sans-serif; background:#ffffff; color:#222; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; padding:24px 0; }
+    .card { background:#ffffff; padding:32px; border-radius:10px; width:340px; border:2px solid #c0392b; box-shadow:0 4px 16px rgba(192,57,43,0.15); }
+    h1 { font-size:20px; margin-bottom:20px; text-align:center; color:#c0392b; }
+    label { display:block; font-size:13px; margin:12px 0 4px; color:#555; }
+    input, select { width:100%; padding:10px; border-radius:6px; border:1px solid #ddd; background:#fff; color:#222; box-sizing:border-box; }
+    input:focus, select:focus { outline:none; border-color:#c0392b; }
+    button { width:100%; margin-top:20px; padding:10px; border:none; border-radius:6px; background:#c0392b; color:#fff; font-weight:bold; cursor:pointer; }
+    button:hover { background:#a5281c; }
+    .error { background:#fdecea; color:#c0392b; padding:10px; border-radius:6px; font-size:13px; margin-top:12px; border:1px solid #f5c6c1; }
+    .error ul { margin:4px 0 0 18px; padding:0; }
+    .info { background:#fdecea; color:#c0392b; padding:10px; border-radius:6px; font-size:13px; margin-top:12px; }
+    p.link { text-align:center; margin-top:16px; font-size:13px; color:#555; }
+    a { color:#c0392b; }
+    .row { display:flex; gap:10px; }
+    .row > div { flex:1; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🩸 Blood Bank — Login</h1>
+
+  <?php if ($error): ?><div class="error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
+  <?php if (isset($_GET['registered'])): ?><div class="info">Registration successful. Please log in.</div><?php endif; ?>
+
+  <form method="post">
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" required autofocus>
+
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" required>
+
+    <button type="submit">Log In</button>
+  </form>
+
+  <p class="link">Donor? <a href="register.php">Register here</a></p>
+</div>
+</body>
+</html>
