@@ -1,5 +1,10 @@
 <?php
-require_once __DIR__ . '/../page_db.php';
+declare(strict_types=1);
+require_once __DIR__ . '/../connect.php';
+require_once __DIR__ . '/../includes/auth.php';
+header('Content-Type: text/html; charset=UTF-8'); // override connect.php's JSON header — this page renders HTML
+
+$user = require_login(['admin', 'staff']);
 $db = getDB();
 
 /*
@@ -118,23 +123,31 @@ $req = $stmt->fetch();
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Review Request #<?= $requestId ?></title>
+<title>Review Request #<?= $requestId ?> — Blood Bank Management System</title>
 <style>
-  body { font-family: Arial, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #222; }
-  .msg-ok { background: #e6f4ea; border: 1px solid #34a853; padding: 10px; border-radius: 4px; }
-  .msg-err { background: #fde8e8; border: 1px solid #d93025; padding: 10px; border-radius: 4px; }
+  body { font-family: Arial, sans-serif; background:#ffffff; color:#222; margin:0; padding:24px; }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; font-size:14px; }
+  nav a { color:#c0392b; text-decoration:none; margin-left:14px; }
+  .card { background:#fff; padding:28px; border-radius:10px; border:2px solid #c0392b; }
+  h1 { font-size: 20px; margin: 0 0 20px; color:#222; }
+  .msg-ok { background: #e6f4ea; border: 1px solid #34a853; padding: 10px; border-radius: 6px; }
+  .msg-err { background: #fdecea; color:#c0392b; border: 1px solid #f5c6c1; padding: 10px; border-radius: 6px; }
   dl { display: grid; grid-template-columns: 140px 1fr; row-gap: 6px; }
   dt { font-weight: bold; color: #555; }
   form { display: inline; }
-  button { padding: 8px 16px; border: none; border-radius: 4px; color: #fff; cursor: pointer; margin-right: 8px; }
+  button { padding: 8px 16px; border: none; border-radius: 6px; color: #fff; cursor: pointer; margin-right: 8px; font-weight:bold; }
   .approve { background: #0a5c36; }
   .reject { background: #842029; }
   .fulfill { background: #084298; }
 </style>
 </head>
 <body>
-<p><a href="dashboard.php">&larr; Back to dashboard</a></p>
-<h1>Request #<?= $requestId ?></h1>
+<div class="wrap">
+  <?php include __DIR__ . '/../includes/staff_nav.php'; ?>
+  <p><a href="dashboard.php" style="color:#c0392b;">&larr; Back to dashboard</a></p>
+  <div class="card">
+  <h1>Request #<?= $requestId ?></h1>
 
 <?php if ($message): ?><p class="msg-ok"><?= htmlspecialchars($message) ?></p><?php endif; ?>
 <?php if ($error): ?><p class="msg-err"><?= htmlspecialchars($error) ?></p><?php endif; ?>
@@ -166,5 +179,7 @@ $req = $stmt->fetch();
     <?php endif; ?>
   </form>
 <?php endif; ?>
+  </div>
+</div>
 </body>
 </html>
