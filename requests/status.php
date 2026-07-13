@@ -1,5 +1,10 @@
 <?php
-require_once __DIR__ . '/../page_db.php';
+declare(strict_types=1);
+require_once __DIR__ . '/../connect.php';
+require_once __DIR__ . '/../includes/auth.php';
+header('Content-Type: text/html; charset=UTF-8'); // override connect.php's JSON header — this page renders HTML
+
+$user = require_login(['admin', 'staff']);
 $db = getDB();
 
 $search = trim($_GET['q'] ?? '');
@@ -51,15 +56,21 @@ function badgeClass(string $status): string {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Request Status</title>
+<title>Request Status — Blood Bank Management System</title>
 <style>
-  body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 16px; color: #222; }
-  h1 { font-size: 1.4rem; }
+  body { font-family: Arial, sans-serif; background:#ffffff; color:#222; margin:0; padding:24px; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; font-size:14px; }
+  nav a { color:#c0392b; text-decoration:none; margin-left:14px; }
+  .card { background:#fff; padding:28px; border-radius:10px; border:2px solid #c0392b; }
+  h1 { font-size: 20px; margin: 0 0 20px; color:#222; }
   form.filters { display: flex; gap: 10px; margin-bottom: 16px; }
-  form.filters input, form.filters select { padding: 6px; }
+  form.filters input, form.filters select { padding: 8px; border:1px solid #ddd; border-radius:6px; }
+  form.filters button { padding: 8px 16px; background:#c0392b; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; }
+  form.filters button:hover { background:#a5281c; }
   table { width: 100%; border-collapse: collapse; }
-  th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; font-size: .9rem; }
-  th { background: #f4f4f4; }
+  th, td { border-bottom: 1px solid #f0d9d5; padding: 8px; text-align: left; font-size: .85rem; }
+  th { color:#777; font-weight:normal; }
   .badge { padding: 3px 8px; border-radius: 12px; font-size: .75rem; font-weight: bold; }
   .st-pending    { background: #fff3cd; color: #7a5c00; }
   .st-processing { background: #cfe2ff; color: #084298; }
@@ -70,7 +81,10 @@ function badgeClass(string $status): string {
 </style>
 </head>
 <body>
-<h1>Blood Request Status</h1>
+<div class="wrap">
+  <?php include __DIR__ . '/../includes/staff_nav.php'; ?>
+  <div class="card">
+  <h1>Blood Request Status</h1>
 
 <form class="filters" method="GET">
   <input type="text" name="q" placeholder="Search by patient name or request ID" value="<?= htmlspecialchars($search) ?>">
@@ -111,6 +125,9 @@ function badgeClass(string $status): string {
   </tbody>
 </table>
 
-<p style="margin-top:20px;"><a href="request_form.php">&larr; Submit a new request</a></p>
+<p style="margin-top:20px;"><a href="request_form.php" style="color:#c0392b;">&larr; Submit a new request</a></p>
+  </div>
+</div>
 </body>
 </html>
+
