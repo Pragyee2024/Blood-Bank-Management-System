@@ -1,5 +1,10 @@
 <?php
-require_once __DIR__ . '/../page_db.php';
+declare(strict_types=1);
+require_once __DIR__ . '/../connect.php';
+require_once __DIR__ . '/../includes/auth.php';
+header('Content-Type: text/html; charset=UTF-8'); // override connect.php's JSON header — this page renders HTML
+
+$user = require_login(['admin', 'staff']);
 $db = getDB();
 
 $search = trim($_GET['q'] ?? '');
@@ -51,26 +56,95 @@ function badgeClass(string $status): string {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Request Status</title>
+<title>Request Status — HemoLink</title>
+<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/theme.css">
 <style>
-  body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 16px; color: #222; }
-  h1 { font-size: 1.4rem; }
-  form.filters { display: flex; gap: 10px; margin-bottom: 16px; }
-  form.filters input, form.filters select { padding: 6px; }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; font-size: .9rem; }
-  th { background: #f4f4f4; }
-  .badge { padding: 3px 8px; border-radius: 12px; font-size: .75rem; font-weight: bold; }
-  .st-pending    { background: #fff3cd; color: #7a5c00; }
-  .st-processing { background: #cfe2ff; color: #084298; }
-  .st-fulfilled  { background: #d1e7dd; color: #0a5c36; }
-  .st-cancelled  { background: #f8d7da; color: #842029; }
-  .urg-Critical { color: #d93025; font-weight: bold; }
-  .urg-High     { color: #e65100; font-weight: bold; }
+  body { 
+    margin: 0; 
+  }
+
+  .main-inner { 
+    max-width: 1080px; 
+  }
+
+  .card { 
+    padding: 28px; 
+  }
+
+  h1 { 
+    font-size: 20px; 
+    margin: 0 0 20px; 
+  }
+
+  form.filters { 
+    display: flex; 
+    gap: 10px; 
+    margin-bottom: 18px; 
+  }
+
+  form.filters input, form.filters select { 
+    padding: 9px; 
+  }
+
+  form.filters button { 
+    padding: 9px 18px; 
+    background: var(--red); 
+    color: #fff; 
+    border: none; 
+  }
+
+  form.filters button:hover { 
+    background: var(--red-dk); 
+  }
+
+  th, td { 
+    padding: 10px 8px; 
+    font-size: .85rem; 
+  }
+
+  .badge { 
+    padding: 3px 10px; 
+  }
+
+  .st-pending    { 
+    background: var(--gold-lt); 
+    color: var(--gold);
+  }
+
+  .st-processing { 
+    background: var(--blue-lt); 
+    color: var(--blue); 
+  }
+
+  .st-fulfilled  { 
+    background: var(--green-lt); 
+    color: var(--green); 
+  }
+
+  .st-cancelled  { 
+    background: var(--red-lt); 
+    color: var(--red-dk); 
+  }
+
+  .urg-Critical { 
+    color: var(--red); 
+    font-weight: 700; 
+  }
+
+  .urg-High     { 
+    color: var(--amber); 
+    font-weight: 700; 
+  }
+
 </style>
 </head>
 <body>
-<h1>Blood Request Status</h1>
+<div class="app-shell">
+  <?php include __DIR__ . '/../includes/staff_nav.php'; ?>
+  <div class="main">
+  <div class="main-inner">
+  <div class="card">
+  <h1>Blood Request Status</h1>
 
 <form class="filters" method="GET">
   <input type="text" name="q" placeholder="Search by patient name or request ID" value="<?= htmlspecialchars($search) ?>">
@@ -111,6 +185,11 @@ function badgeClass(string $status): string {
   </tbody>
 </table>
 
-<p style="margin-top:20px;"><a href="request_form.php">&larr; Submit a new request</a></p>
+<p style="margin-top:20px;"><a href="request_form.php" style="color:var(--red);">&larr; Submit a new request</a></p>
+  </div>
+  </div>
+  </div>
+</div>
 </body>
 </html>
+

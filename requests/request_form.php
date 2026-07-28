@@ -1,5 +1,10 @@
 <?php
-require_once __DIR__ . '/../page_db.php';
+declare(strict_types=1);
+require_once __DIR__ . '/../connect.php';
+require_once __DIR__ . '/../includes/auth.php';
+header('Content-Type: text/html; charset=UTF-8'); // override connect.php's JSON header — this page renders HTML
+
+$user = require_login(['admin', 'staff']);
 $db = getDB();
 
 $hospitals = $db->query("SELECT hospital_id, name FROM hospital ORDER BY name")->fetchAll();
@@ -52,22 +57,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Submit Blood Request</title>
+<title>Submit Blood Request — Blood Bank Management System</title>
 <style>
-  body { font-family: Arial, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #222; }
-  h1 { font-size: 1.4rem; }
-  label { display: block; margin-top: 14px; font-weight: bold; font-size: .9rem; }
-  select, input, textarea { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
-  button { margin-top: 20px; padding: 10px 18px; background: #b71c1c; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
-  button:hover { background: #8e1414; }
-  .msg-ok  { background: #e6f4ea; border: 1px solid #34a853; padding: 10px; border-radius: 4px; }
-  .msg-err { background: #fde8e8; border: 1px solid #d93025; padding: 10px; border-radius: 4px; }
+  body { font-family: Arial, sans-serif; background:#ffffff; color:#222; margin:0; padding:24px; }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; font-size:14px; }
+  nav a { color:#c0392b; text-decoration:none; margin-left:14px; }
+  .card { background:#fff; padding:28px; border-radius:10px; border:2px solid #c0392b; }
+  h1 { font-size: 20px; margin: 0 0 20px; color:#222; }
+  label { display: block; margin-top: 14px; font-weight: bold; font-size: .9rem; color:#555; }
+  select, input, textarea { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; border:1px solid #ddd; border-radius:6px; }
+  select:focus, input:focus, textarea:focus { outline:none; border-color:#c0392b; }
+  button { margin-top: 20px; padding: 10px 18px; background: #c0392b; color: #fff; border: none; border-radius: 6px; font-weight:bold; cursor: pointer; }
+  button:hover { background: #a5281c; }
+  .msg-ok  { background: #e6f4ea; border: 1px solid #34a853; padding: 10px; border-radius: 6px; }
+  .msg-err { background: #fdecea; color:#c0392b; border: 1px solid #f5c6c1; padding: 10px; border-radius: 6px; }
   .row { display: flex; gap: 12px; }
   .row > div { flex: 1; }
 </style>
 </head>
 <body>
-<h1>Submit Blood Request</h1>
+<div class="wrap">
+  <?php include __DIR__ . '/../includes/staff_nav.php'; ?>
+  <div class="card">
+  <h1>Submit Blood Request</h1>
 
 <?php if ($message): ?><p class="msg-ok"><?= htmlspecialchars($message) ?></p><?php endif; ?>
 <?php if ($error): ?><p class="msg-err"><?= htmlspecialchars($error) ?></p><?php endif; ?>
@@ -140,7 +153,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <button type="submit">Submit Request</button>
 </form>
 
-<p style="margin-top:20px;"><a href="status.php">View request status &rarr;</a></p>
+<p style="margin-top:20px;"><a href="status.php" style="color:#c0392b;">View request status &rarr;</a></p>
+  </div>
+</div>
 
 <script>
 // AJAX-load doctors/patients for the chosen hospital, hitting api/requests.php
@@ -169,3 +184,4 @@ document.getElementById('hospital_id').addEventListener('change', function () {
 </script>
 </body>
 </html>
+

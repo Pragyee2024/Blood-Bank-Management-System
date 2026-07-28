@@ -1,5 +1,10 @@
 <?php
-require_once __DIR__ . '/../page_db.php';
+declare(strict_types=1);
+require_once __DIR__ . '/../connect.php';
+require_once __DIR__ . '/../includes/auth.php';
+header('Content-Type: text/html; charset=UTF-8'); 
+
+$user = require_login(['admin', 'staff']);
 $db = getDB();
 
 // Requests by status
@@ -59,33 +64,104 @@ $recentPending = $db->query("
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Admin Dashboard</title>
+<title>Admin Dashboard — HemoLink</title>
+<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/theme.css">
 <style>
-  body { font-family: Arial, sans-serif; max-width: 1000px; margin: 40px auto; padding: 0 16px; color: #222; }
-  h1 { font-size: 1.5rem; }
-  .cards { display: flex; gap: 14px; flex-wrap: wrap; margin: 20px 0; }
-  .card { flex: 1; min-width: 150px; background: #f7f7f7; border-radius: 8px; padding: 16px; text-align: center; }
-  .card .num { font-size: 1.8rem; font-weight: bold; color: #b71c1c; }
-  .card .label { font-size: .8rem; color: #555; margin-top: 4px; }
-  .warn .num { color: #e65100; }
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; font-size: .9rem; }
-  th { background: #f4f4f4; }
-  h2 { font-size: 1.1rem; margin-top: 30px; }
-  a.btn { padding: 4px 10px; background: #b71c1c; color: #fff; text-decoration: none; border-radius: 4px; font-size: .8rem; }
+  body { 
+    margin: 0; 
+  }
+
+  .main-inner { 
+    max-width: 1080px; 
+  }
+
+  h1 { 
+    font-size: 21px; 
+    margin: 0 0 20px; 
+  }
+
+  .cards { 
+    display: flex; 
+    gap: 14px; 
+    flex-wrap: wrap; 
+    margin: 20px 0; 
+  }
+
+  .stat-card { 
+    flex: 1; 
+    min-width: 160px; 
+    background: var(--red-lt); 
+    border-radius: var(--radius); 
+    padding: 18px; 
+    text-align: center; 
+  }
+
+  .stat-card .num { 
+    font-size: 1.8rem; 
+    font-weight: 800; 
+    color: var(--red); 
+  }
+
+  .stat-card .label 
+  {
+    font-size: .78rem; 
+    color: var(--muted); 
+    margin-top: 4px; 
+    text-transform: uppercase; 
+    letter-spacing: .03em; 
+  }
+  .warn 
+  { 
+    background: var(--amber-lt); 
+  }
+
+  .warn .num { 
+    color: var(--amber); 
+  }
+  .card { 
+    padding: 24px; 
+    margin-top: 20px; 
+  }
+  table { 
+    margin-top: 10px; 
+  }
+  th, td { 
+    padding: 10px 8px; 
+    font-size: .85rem; 
+  }
+  h2 { 
+    font-size: 1rem; 
+    margin: 0 0 10px; 
+  }
+  a.btn { 
+    padding: 5px 12px; 
+    background: var(--red); 
+    color: #fff; 
+    text-decoration: none; 
+    font-size: .8rem; 
+    display: inline-block; 
+  }
+  a.btn:hover { 
+    background: var(--red-dk); 
+    }
 </style>
 </head>
 <body>
-<h1>Admin Dashboard</h1>
+<div class="app-shell">
+  <?php include __DIR__ . '/../includes/staff_nav.php'; ?>
+  <div class="main">
+  <div class="main-inner">
+  <h1>Admin Dashboard</h1>
 
 <div class="cards">
-  <div class="card"><div class="num"><?= (int)$totalDonors ?></div><div class="label">Registered Donors</div></div>
-  <div class="card"><div class="num"><?= (int)$totalUnits ?></div><div class="label">Available Blood Units</div></div>
-  <div class="card"><div class="num"><?= (int)$totalRequests ?></div><div class="label">Total Requests</div></div>
-  <div class="card <?= $urgentPending > 0 ? 'warn' : '' ?>"><div class="num"><?= (int)$urgentPending ?></div><div class="label">Urgent Pending Requests</div></div>
-  <div class="card <?= $expiringSoon > 0 ? 'warn' : '' ?>"><div class="num"><?= (int)$expiringSoon ?></div><div class="label">Units Expiring in 7 Days</div></div>
+  <div class="stat-card"><div class="num"><?= (int)$totalDonors ?></div><div class="label">Registered Donors</div></div>
+  <div class="stat-card"><div class="num"><?= (int)$totalUnits ?></div><div class="label">Available Blood Units</div></div>
+  <div class="stat-card"><div class="num"><?= (int)$totalRequests ?></div><div class="label">Total Requests</div></div>
+  <div class="stat-card <?= $urgentPending > 0 ? 'warn' : '' ?>"><div class="num"><?= (int)$urgentPending ?></div><div class="label">Urgent Pending Requests</div></div>
+  <div class="stat-card <?= $expiringSoon > 0 ? 'warn' : '' ?>"><div class="num"><?= (int)$expiringSoon ?></div><div class="label">Units Expiring in 7 Days</div></div>
 </div>
 
+<div class="card">
 <h2>Requests by Status</h2>
 <table>
   <tr><th>Pending</th><th>Processing</th><th>Fulfilled</th><th>Cancelled</th></tr>
@@ -96,7 +172,9 @@ $recentPending = $db->query("
     <td><?= $statuses['Cancelled'] ?></td>
   </tr>
 </table>
+</div>
 
+<div class="card">
 <h2>Available Inventory by Blood Group</h2>
 <table>
   <thead><tr><th>Group</th><th>Available Units</th><th>Total Volume (ml)</th></tr></thead>
@@ -113,7 +191,9 @@ $recentPending = $db->query("
     <?php endforeach; ?>
   </tbody>
 </table>
+</div>
 
+<div class="card">
 <h2>Pending Requests (needs review)</h2>
 <table>
   <thead><tr><th>ID</th><th>Patient</th><th>Group</th><th>Units</th><th>Urgency</th><th>Requested</th><th></th></tr></thead>
@@ -134,6 +214,10 @@ $recentPending = $db->query("
     <?php endforeach; ?>
   </tbody>
 </table>
+</div>
 
+  </div>
+  </div>
+</div>
 </body>
 </html>
