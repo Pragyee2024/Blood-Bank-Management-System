@@ -2,20 +2,11 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../connect.php';
 require_once __DIR__ . '/../includes/auth.php';
-header('Content-Type: text/html; charset=UTF-8'); // override connect.php's JSON header — this page renders HTML
+header('Content-Type: text/html; charset=UTF-8'); 
 
 $user = require_login(['admin', 'staff']);
 $db = getDB();
 
-/*
- * INTEGRATION NOTE FOR THE TEAM:
- * Approving a request reserves rows in blood_unit (status Available -> Reserved).
- * Member 3's inventory module also writes to blood_unit. Both of you need to agree
- * that "Reserved" always means "claimed by an approved blood_request" and that no
- * other code path flips a unit from Reserved back to Available except a cancellation
- * here or an explicit inventory correction. The transaction below uses
- * SELECT ... FOR UPDATE to avoid two admins double-booking the same unit.
- */
 
 $requestId = (int)($_GET['request_id'] ?? $_POST['request_id'] ?? 0);
 $message = '';
@@ -40,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$req) throw new Exception('Request not found.');
             if ($req['status'] !== 'Pending') throw new Exception('Request is not pending.');
 
-            // Lock and reserve enough available units matching group + component
+            
             $unitStmt = $db->prepare("
                 SELECT unit_id FROM blood_unit
                 WHERE group_id = :group_id AND component = :component AND status = 'Available'
@@ -82,8 +73,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
            ->execute([':id' => $requestId]);
         $message = "Request #$requestId rejected.";
     } elseif ($action === 'fulfill') {
-        // Mark reserved units as transfused and close out the request
-        // Postgres uses UPDATE ... FROM instead of MySQL's UPDATE ... JOIN
         try {
             $db->beginTransaction();
             $db->prepare("
@@ -123,29 +112,31 @@ $req = $stmt->fetch();
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Review Request #<?= $requestId ?> — Blood Bank Management System</title>
+<title>Review Request #<?= $requestId ?> — HemoLink</title>
+<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/theme.css">
 <style>
-  body { font-family: Arial, sans-serif; background:#ffffff; color:#222; margin:0; padding:24px; }
-  .wrap { max-width: 640px; margin: 0 auto; }
-  nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; font-size:14px; }
-  nav a { color:#c0392b; text-decoration:none; margin-left:14px; }
-  .card { background:#fff; padding:28px; border-radius:10px; border:2px solid #c0392b; }
-  h1 { font-size: 20px; margin: 0 0 20px; color:#222; }
-  .msg-ok { background: #e6f4ea; border: 1px solid #34a853; padding: 10px; border-radius: 6px; }
-  .msg-err { background: #fdecea; color:#c0392b; border: 1px solid #f5c6c1; padding: 10px; border-radius: 6px; }
-  dl { display: grid; grid-template-columns: 140px 1fr; row-gap: 6px; }
-  dt { font-weight: bold; color: #555; }
+  body { margin: 0; }
+  .main-inner { max-width: 640px; }
+  .card { padding: 28px; }
+  h1 { font-size: 20px; margin: 0 0 20px; }
+  dl { display: grid; grid-template-columns: 140px 1fr; row-gap: 8px; }
+  dt { font-weight: 600; color: var(--muted); }
   form { display: inline; }
-  button { padding: 8px 16px; border: none; border-radius: 6px; color: #fff; cursor: pointer; margin-right: 8px; font-weight:bold; }
-  .approve { background: #0a5c36; }
-  .reject { background: #842029; }
-  .fulfill { background: #084298; }
+  button { padding: 9px 18px; border: none; color: #fff; margin-right: 8px; }
+  .approve { background: var(--green); }
+  .approve:hover { background: #14532d; }
+  .reject { background: var(--red); }
+  .reject:hover { background: var(--red-dk); }
+  .fulfill { background: var(--blue); }
+  .fulfill:hover { background: #1e3a8a; }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app-shell">
   <?php include __DIR__ . '/../includes/staff_nav.php'; ?>
-  <p><a href="dashboard.php" style="color:#c0392b;">&larr; Back to dashboard</a></p>
+  <div class="main">
+  <div class="main-inner">
+  <p><a href="dashboard.php" style="color:var(--red);">&larr; Back to dashboard</a></p>
   <div class="card">
   <h1>Request #<?= $requestId ?></h1>
 
@@ -179,6 +170,8 @@ $req = $stmt->fetch();
     <?php endif; ?>
   </form>
 <?php endif; ?>
+  </div>
+  </div>
   </div>
 </div>
 </body>
