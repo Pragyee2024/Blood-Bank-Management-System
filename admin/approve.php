@@ -2,30 +2,11 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../connect.php';
 require_once __DIR__ . '/../includes/auth.php';
-header('Content-Type: text/html; charset=UTF-8'); // override connect.php's JSON header — this page renders HTML
+header('Content-Type: text/html; charset=UTF-8'); 
 
 $user = require_login(['admin', 'staff']);
 $db = getDB();
 
-// Fetch blood group ID mappings from database
-$groupMap = [];
-$groupNames = [];
-foreach ($db->query("SELECT group_id, group_name FROM blood_groups")->fetchAll() as $row) {
-    $groupMap[$row['group_name']] = (int)$row['group_id'];
-    $groupNames[(int)$row['group_id']] = $row['group_name'];
-}
-
-// Red blood cell compatibility dictionary
-$compatibility = [
-    'A+' => ['A+', 'A-', 'O+', 'O-'],
-    'A-' => ['A-', 'O-'],
-    'B+' => ['B+', 'B-', 'O+', 'O-'],
-    'B-' => ['B-', 'O-'],
-    'AB+' => ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'], // Universal Recipient
-    'AB-' => ['A-', 'B-', 'AB-', 'O-'],
-    'O+' => ['O+', 'O-'],
-    'O-' => ['O-'] // Universal Donor
-];
 
 $requestId = (int)($_GET['request_id'] ?? $_POST['request_id'] ?? 0);
 $message = '';
@@ -50,21 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$req) throw new Exception('Request not found.');
             if ($req['status'] !== 'Pending') throw new Exception('Request is not pending.');
 
-            // Get recipient blood group name
-            $reqGroupName = $groupNames[(int)$req['group_id']] ?? '';
-            $compatibleIds = [(int)$req['group_id']];
             
-            if ($reqGroupName && isset($compatibility[$reqGroupName])) {
-                $compatibleIds = [];
-                foreach ($compatibility[$reqGroupName] as $name) {
-                    if (isset($groupMap[$name])) {
-                        $compatibleIds[] = $groupMap[$name];
-                    }
-                }
-            }
-
-            // Lock and reserve enough compatible available units
-            $inClause = implode(',', $compatibleIds);
             $unitStmt = $db->prepare("
                 SELECT unit_id FROM blood_unit
                 WHERE group_id IN ($inClause) AND component = :component AND status = 'Available'
@@ -118,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $db->prepare("UPDATE blood_request SET status = 'Cancelled' WHERE request_id = :id AND status = 'Pending'")
            ->execute([':id' => $requestId]);
         $message = "Request #$requestId rejected.";
-    } elseif ($action === 'release') {
+    } elseif ($action === 'fulfill') {
         try {
             $db->beginTransaction();
 
@@ -273,29 +240,31 @@ if ($req && $req['status'] === 'Pending') {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Review Request #<?= $requestId ?> — Blood Bank Management System</title>
+<title>Review Request #<?= $requestId ?> — HemoLink</title>
+<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/theme.css">
 <style>
-  body { font-family: Arial, sans-serif; background:#ffffff; color:#222; margin:0; padding:24px; }
-  .wrap { max-width: 640px; margin: 0 auto; }
-  nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; font-size:14px; }
-  nav a { color:#c0392b; text-decoration:none; margin-left:14px; }
-  .card { background:#fff; padding:28px; border-radius:10px; border:2px solid #c0392b; }
-  h1 { font-size: 20px; margin: 0 0 20px; color:#222; }
-  .msg-ok { background: #e6f4ea; border: 1px solid #34a853; padding: 10px; border-radius: 6px; }
-  .msg-err { background: #fdecea; color:#c0392b; border: 1px solid #f5c6c1; padding: 10px; border-radius: 6px; }
-  dl { display: grid; grid-template-columns: 140px 1fr; row-gap: 6px; }
-  dt { font-weight: bold; color: #555; }
+  body { margin: 0; }
+  .main-inner { max-width: 640px; }
+  .card { padding: 28px; }
+  h1 { font-size: 20px; margin: 0 0 20px; }
+  dl { display: grid; grid-template-columns: 140px 1fr; row-gap: 8px; }
+  dt { font-weight: 600; color: var(--muted); }
   form { display: inline; }
-  button { padding: 8px 16px; border: none; border-radius: 6px; color: #fff; cursor: pointer; margin-right: 8px; font-weight:bold; }
-  .approve { background: #0a5c36; }
-  .reject { background: #842029; }
-  .fulfill { background: #084298; }
+  button { padding: 9px 18px; border: none; color: #fff; margin-right: 8px; }
+  .approve { background: var(--green); }
+  .approve:hover { background: #14532d; }
+  .reject { background: var(--red); }
+  .reject:hover { background: var(--red-dk); }
+  .fulfill { background: var(--blue); }
+  .fulfill:hover { background: #1e3a8a; }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app-shell">
   <?php include __DIR__ . '/../includes/staff_nav.php'; ?>
-  <p><a href="dashboard.php" style="color:#c0392b;">&larr; Back to dashboard</a></p>
+  <div class="main">
+  <div class="main-inner">
+  <p><a href="dashboard.php" style="color:var(--red);">&larr; Back to dashboard</a></p>
   <div class="card">
   <h1>Request #<?= $requestId ?></h1>
 
@@ -367,6 +336,8 @@ if ($req && $req['status'] === 'Pending') {
     <?php endif; ?>
   </form>
 <?php endif; ?>
+  </div>
+  </div>
   </div>
 </div>
 </body>

@@ -56,33 +56,93 @@ function badgeClass(string $status): string {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Request Status — Blood Bank Management System</title>
+<title>Request Status — HemoLink</title>
+<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/theme.css">
 <style>
-  body { font-family: Arial, sans-serif; background:#ffffff; color:#222; margin:0; padding:24px; }
-  .wrap { max-width: 1000px; margin: 0 auto; }
-  nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; font-size:14px; }
-  nav a { color:#c0392b; text-decoration:none; margin-left:14px; }
-  .card { background:#fff; padding:28px; border-radius:10px; border:2px solid #c0392b; }
-  h1 { font-size: 20px; margin: 0 0 20px; color:#222; }
-  form.filters { display: flex; gap: 10px; margin-bottom: 16px; }
-  form.filters input, form.filters select { padding: 8px; border:1px solid #ddd; border-radius:6px; }
-  form.filters button { padding: 8px 16px; background:#c0392b; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; }
-  form.filters button:hover { background:#a5281c; }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { border-bottom: 1px solid #f0d9d5; padding: 8px; text-align: left; font-size: .85rem; }
-  th { color:#777; font-weight:normal; }
-  .badge { padding: 3px 8px; border-radius: 12px; font-size: .75rem; font-weight: bold; }
-  .st-pending    { background: #fff3cd; color: #7a5c00; }
-  .st-processing { background: #cfe2ff; color: #084298; }
-  .st-fulfilled  { background: #d1e7dd; color: #0a5c36; }
-  .st-cancelled  { background: #f8d7da; color: #842029; }
-  .urg-Critical { color: #d93025; font-weight: bold; }
-  .urg-High     { color: #e65100; font-weight: bold; }
+  body { 
+    margin: 0; 
+  }
+
+  .main-inner { 
+    max-width: 1080px; 
+  }
+
+  .card { 
+    padding: 28px; 
+  }
+
+  h1 { 
+    font-size: 20px; 
+    margin: 0 0 20px; 
+  }
+
+  form.filters { 
+    display: flex; 
+    gap: 10px; 
+    margin-bottom: 18px; 
+  }
+
+  form.filters input, form.filters select { 
+    padding: 9px; 
+  }
+
+  form.filters button { 
+    padding: 9px 18px; 
+    background: var(--red); 
+    color: #fff; 
+    border: none; 
+  }
+
+  form.filters button:hover { 
+    background: var(--red-dk); 
+  }
+
+  th, td { 
+    padding: 10px 8px; 
+    font-size: .85rem; 
+  }
+
+  .badge { 
+    padding: 3px 10px; 
+  }
+
+  .st-pending    { 
+    background: var(--gold-lt); 
+    color: var(--gold);
+  }
+
+  .st-processing { 
+    background: var(--blue-lt); 
+    color: var(--blue); 
+  }
+
+  .st-fulfilled  { 
+    background: var(--green-lt); 
+    color: var(--green); 
+  }
+
+  .st-cancelled  { 
+    background: var(--red-lt); 
+    color: var(--red-dk); 
+  }
+
+  .urg-Critical { 
+    color: var(--red); 
+    font-weight: 700; 
+  }
+
+  .urg-High     { 
+    color: var(--amber); 
+    font-weight: 700; 
+  }
+
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app-shell">
   <?php include __DIR__ . '/../includes/staff_nav.php'; ?>
+  <div class="main">
+  <div class="main-inner">
   <div class="card">
   <h1>Blood Request Status</h1>
 
@@ -125,7 +185,9 @@ function badgeClass(string $status): string {
   </tbody>
 </table>
 
-<p style="margin-top:20px;"><a href="request_form.php" style="color:#c0392b;">&larr; Submit a new request</a></p>
+<p style="margin-top:20px;"><a href="request_form.php" style="color:var(--red);">&larr; Submit a new request</a></p>
+  </div>
+  </div>
   </div>
 </div>
 </body>

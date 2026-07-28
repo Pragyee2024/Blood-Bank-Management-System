@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../connect.php';
 require_once __DIR__ . '/../includes/auth.php';
-header('Content-Type: text/html; charset=UTF-8'); // override connect.php's JSON header — this page renders HTML
+header('Content-Type: text/html; charset=UTF-8'); 
 
 $user = require_login(['admin', 'staff']);
 $db = getDB();
@@ -64,30 +64,93 @@ $recentPending = $db->query("
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Admin Dashboard — Blood Bank Management System</title>
+<title>Admin Dashboard — HemoLink</title>
+<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/theme.css">
 <style>
-  body { font-family: Arial, sans-serif; background:#ffffff; color:#222; margin:0; padding:24px; }
-  .wrap { max-width: 1000px; margin: 0 auto; }
-  nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; font-size:14px; }
-  nav a { color:#c0392b; text-decoration:none; margin-left:14px; }
-  h1 { font-size: 20px; margin: 0 0 20px; color:#222; }
-  .cards { display: flex; gap: 14px; flex-wrap: wrap; margin: 20px 0; }
-  .stat-card { flex: 1; min-width: 150px; background: #fdecea; border-radius: 8px; padding: 16px; text-align: center; }
-  .stat-card .num { font-size: 1.8rem; font-weight: bold; color: #c0392b; }
-  .stat-card .label { font-size: .8rem; color: #555; margin-top: 4px; }
-  .warn .num { color: #e65100; }
-  .card { background:#fff; padding:24px; border-radius:10px; border:2px solid #c0392b; margin-top: 20px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  th, td { border-bottom: 1px solid #f0d9d5; padding: 8px; text-align: left; font-size: .85rem; }
-  th { color:#777; font-weight:normal; }
-  h2 { font-size: 1rem; margin: 0 0 6px; color:#222; }
-  a.btn { padding: 4px 10px; background: #c0392b; color: #fff; text-decoration: none; border-radius: 6px; font-size: .8rem; }
-  a.btn:hover { background: #a5281c; }
+  body { 
+    margin: 0; 
+  }
+
+  .main-inner { 
+    max-width: 1080px; 
+  }
+
+  h1 { 
+    font-size: 21px; 
+    margin: 0 0 20px; 
+  }
+
+  .cards { 
+    display: flex; 
+    gap: 14px; 
+    flex-wrap: wrap; 
+    margin: 20px 0; 
+  }
+
+  .stat-card { 
+    flex: 1; 
+    min-width: 160px; 
+    background: var(--red-lt); 
+    border-radius: var(--radius); 
+    padding: 18px; 
+    text-align: center; 
+  }
+
+  .stat-card .num { 
+    font-size: 1.8rem; 
+    font-weight: 800; 
+    color: var(--red); 
+  }
+
+  .stat-card .label 
+  {
+    font-size: .78rem; 
+    color: var(--muted); 
+    margin-top: 4px; 
+    text-transform: uppercase; 
+    letter-spacing: .03em; 
+  }
+  .warn 
+  { 
+    background: var(--amber-lt); 
+  }
+
+  .warn .num { 
+    color: var(--amber); 
+  }
+  .card { 
+    padding: 24px; 
+    margin-top: 20px; 
+  }
+  table { 
+    margin-top: 10px; 
+  }
+  th, td { 
+    padding: 10px 8px; 
+    font-size: .85rem; 
+  }
+  h2 { 
+    font-size: 1rem; 
+    margin: 0 0 10px; 
+  }
+  a.btn { 
+    padding: 5px 12px; 
+    background: var(--red); 
+    color: #fff; 
+    text-decoration: none; 
+    font-size: .8rem; 
+    display: inline-block; 
+  }
+  a.btn:hover { 
+    background: var(--red-dk); 
+    }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app-shell">
   <?php include __DIR__ . '/../includes/staff_nav.php'; ?>
+  <div class="main">
+  <div class="main-inner">
   <h1>Admin Dashboard</h1>
 
 <div class="cards">
@@ -153,6 +216,8 @@ $recentPending = $db->query("
 </table>
 </div>
 
+  </div>
+  </div>
 </div>
 </body>
 </html>
