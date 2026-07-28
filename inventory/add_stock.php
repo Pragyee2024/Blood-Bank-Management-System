@@ -65,24 +65,18 @@ $banks = $db->query('SELECT bank_id, name, location FROM blood_bank ORDER BY nam
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Add Blood Stock — Blood Bank Management System</title>
-<title>Add Blood Stock — Blood Bank Management System</title>
+<title>Add Blood Stock — HemoLink</title>
+<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/theme.css">
 <style>
-  body { font-family: Arial, sans-serif; background:#ffffff; color:#222; margin:0; padding:24px; }
-  .wrap { max-width: 640px; margin: 0 auto; }
-  nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; font-size:14px; }
-  nav a { color:#c0392b; text-decoration:none; margin-left:14px; }
-  nav a:hover { text-decoration: underline; }
-  .card { background:#fff; padding:28px; border-radius:10px; border:2px solid #c0392b; }
-  h1 { font-size: 20px; margin: 0 0 4px; color:#222; }
-  .subtitle { font-size: 13px; color: #555; margin-bottom: 20px; }
-  label { display: block; margin-top: 14px; font-weight: bold; font-size: .9rem; color:#555; }
-  select, input { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; border:1px solid #ddd; border-radius:6px; background:#fff; color:#222; font-family:inherit; font-size:14px; }
-  select:focus, input:focus { outline:none; border-color:#c0392b; }
-  button { width: 100%; margin-top: 20px; padding: 10px 18px; background: #c0392b; color: #fff; border: none; border-radius: 6px; font-weight:bold; cursor: pointer; }
-  button:hover { background: #a5281c; }
-  .alert-success { background: #e6f4ea; border: 1px solid #34a853; padding: 10px; border-radius: 6px; color: #137333; }
-  .alert-error { background: #fdecea; color:#c0392b; border: 1px solid #f5c6c1; padding: 10px; border-radius: 6px; }
+  body { margin: 0; }
+  .main-inner { max-width: 640px; }
+  .card { padding: 28px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .subtitle { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+  label { display: block; margin-top: 14px; font-size: .9rem; }
+  select, input { width: 100%; padding: 9px; margin-top: 4px; box-sizing: border-box; font-size:14px; }
+  button { width: 100%; margin-top: 20px; padding: 11px 18px; background: var(--red); color: #fff; border: none; }
+  button:hover { background: var(--red-dk); }
   .row { display: flex; gap: 12px; }
   .row > div { flex: 1; }
   @media (max-width: 640px) {
@@ -92,8 +86,10 @@ $banks = $db->query('SELECT bank_id, name, location FROM blood_bank ORDER BY nam
 </head>
 <body>
 
-<div class="wrap">
+<div class="app-shell">
   <?php include __DIR__ . '/../includes/staff_nav.php'; ?>
+  <div class="main">
+  <div class="main-inner">
 
   <div class="card">
     <h1>🩸 Add Blood Stock</h1>
@@ -147,6 +143,8 @@ $banks = $db->query('SELECT bank_id, name, location FROM blood_bank ORDER BY nam
 
       <button type="submit">Record & Save Unit</button>
     </form>
+  </div>
+  </div>
   </div>
 </div>
 

@@ -27,169 +27,64 @@ $expiringUnits = $stmt->fetchAll();
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Expiry Tracker — Blood Bank Management System</title>
+<title>Expiry Tracker — HemoLink</title>
+<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/theme.css">
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background-color: #ffffff;
-    color: #222;
-    margin: 0;
-    padding: 24px;
-  }
-  
-  .wrap {
-    max-width: 1000px;
-    margin: 0 auto;
-  }
-  
-  nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    font-size: 14px;
-  }
-  nav a {
-    color: #c0392b;
-    text-decoration: none;
-    margin-left: 14px;
-  }
-  nav a:hover {
-    text-decoration: underline;
-  }
-
-  h1 {
-    font-size: 20px;
-    margin: 0 0 4px 0;
-    color: #222;
-  }
-  
-  .subtitle {
-    font-size: 13px;
-    color: #555;
-    margin-bottom: 20px;
-  }
+  body { margin: 0; }
+  .main-inner { max-width: 1080px; }
+  h1 { font-size: 20px; margin: 0 0 4px 0; }
+  .subtitle { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
 
   /* Expiry Banner */
   .expiry-alert-banner {
-    background-color: #fdecea;
-    border: 1px solid #c0392b;
-    border-radius: 8px;
+    background-color: var(--red-lt);
+    border: 1px solid var(--red-md);
+    border-radius: var(--radius);
     padding: 16px 20px;
     margin-bottom: 20px;
     display: flex;
     align-items: center;
     gap: 16px;
-    color: #c0392b;
+    color: var(--red-dk);
   }
-  
-  .expiry-alert-banner svg {
-    width: 24px;
-    height: 24px;
-    flex-shrink: 0;
-    color: #c0392b;
-  }
-  
-  .expiry-alert-banner .title {
-    font-weight: bold;
-    font-size: 14px;
-  }
-  
-  .expiry-alert-banner .desc {
-    font-size: 13px;
-    color: #555;
-    margin-top: 4px;
-  }
+  .expiry-alert-banner svg { width: 24px; height: 24px; flex-shrink: 0; color: var(--red); }
+  .expiry-alert-banner .title { font-weight: 700; font-size: 14px; }
+  .expiry-alert-banner .desc { font-size: 13px; color: #7a3a3a; margin-top: 4px; }
 
   /* Table */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-  }
-  
-  th, td {
-    border-bottom: 1px solid #f0d9d5;
-    padding: 8px;
-    text-align: left;
-    font-size: .85rem;
-  }
-  
-  th {
-    color: #777;
-    font-weight: normal;
-  }
-  
-  tr:hover td {
-    background-color: #faf5f5;
-  }
+  .table-container { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 8px 20px; }
+  table { margin-top: 4px; }
+  th, td { padding: 10px 8px; font-size: .85rem; }
 
   /* Expiry Indicators */
-  .days-badge {
-    display: inline-block;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: bold;
-  }
-  
-  .days-expired {
-    background-color: #fce8e6;
-    color: #c5221f;
-    border: 1px solid #fca5a5;
-  }
-  
-  .days-critical {
-    background-color: #fef7e0;
-    color: #b06000;
-    border: 1px solid #fde68a;
-  }
-  
-  .days-warning {
-    background-color: #e8f0fe;
-    color: #1a73e8;
-    border: 1px solid #c2e0ff;
-  }
+  .days-expired  { background-color: var(--red-lt); color: var(--red-dk); border: 1px solid var(--red-md); }
+  .days-critical { background-color: var(--amber-lt); color: var(--amber); border: 1px solid #f6dcb0; }
+  .days-warning  { background-color: var(--blue-lt); color: var(--blue); border: 1px solid #c2d6ff; }
 
   .btn {
-    padding: 4px 8px;
+    padding: 5px 10px;
     border: none;
-    border-radius: 4px;
-    font-weight: bold;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
     font-size: 12px;
-    cursor: pointer;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
   }
-  
-  .btn-discard {
-    background-color: #c0392b;
-    color: #fff;
-  }
-  .btn-discard:hover {
-    background-color: #a5281c;
-  }
-  
-  .btn-expire {
-    background-color: #e65100;
-    color: #fff;
-    margin-right: 6px;
-  }
-  .btn-expire:hover {
-    background-color: #b23c00;
-  }
+  .btn-discard { background-color: var(--red); color: #fff; }
+  .btn-discard:hover { background-color: var(--red-dk); }
+  .btn-expire { background-color: var(--amber); color: #fff; margin-right: 6px; }
+  .btn-expire:hover { background-color: #92400e; }
 
   .toast {
     position: fixed;
     bottom: 24px;
     right: 24px;
-    background: #222;
+    background: var(--slate);
     color: #fff;
-    padding: 10px 20px;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    padding: 11px 20px;
+    border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     font-size: 13px;
@@ -199,16 +94,15 @@ $expiringUnits = $stmt->fetchAll();
     transition: opacity 0.3s, transform 0.3s;
     pointer-events: none;
   }
-  .toast.show {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  .toast.show { opacity: 1; transform: translateY(0); }
 </style>
 </head>
 <body>
 
-<div class="wrap">
+<div class="app-shell">
   <?php include __DIR__ . '/../includes/staff_nav.php'; ?>
+  <div class="main">
+  <div class="main-inner">
 
   <h1>🩸 Blood Expiry Tracker</h1>
   <div class="subtitle">Monitor blood units near or past their expiration dates</div>
@@ -284,6 +178,8 @@ $expiringUnits = $stmt->fetchAll();
       </tbody>
     </table>
   </div>
+  </div>
+  </div>
 </div>
 
 <div class="toast" id="toast">Notification text</div>
@@ -292,7 +188,7 @@ $expiringUnits = $stmt->fetchAll();
   function showToast(text, isError = false) {
     const toast = document.getElementById('toast');
     toast.textContent = text;
-    toast.style.backgroundColor = isError ? '#c0392b' : '#222';
+    toast.style.backgroundColor = isError ? '#c0152b' : '#1e2430';
     toast.classList.add('show');
     setTimeout(() => {
       toast.classList.remove('show');

@@ -71,274 +71,71 @@ $units = $stmt->fetchAll();
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inventory Stock — Blood Bank Management System</title>
+<title>Inventory Stock — HemoLink</title>
+<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/theme.css">
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background-color: #ffffff;
-    color: #222;
-    margin: 0;
-    padding: 24px;
-  }
-  
-  .wrap {
-    max-width: 1000px;
-    margin: 0 auto;
-  }
-  
-  nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    font-size: 14px;
-  }
-  nav a {
-    color: #c0392b;
-    text-decoration: none;
-    margin-left: 14px;
-  }
-  nav a:hover {
-    text-decoration: underline;
-  }
-
-  h1 {
-    font-size: 20px;
-    margin: 0 0 20px 0;
-    color: #222;
-  }
+  body { margin: 0; }
+  .main-inner { max-width: 1080px; }
+  h1 { font-size: 20px; margin: 0 0 20px 0; }
 
   /* Stat Grid */
-  .cards {
-    display: flex;
-    gap: 14px;
-    flex-wrap: wrap;
-    margin: 20px 0;
-  }
-  
-  .stat-card {
-    flex: 1;
-    min-width: 180px;
-    background: #fdecea;
-    border-radius: 8px;
-    padding: 16px;
-    text-align: center;
-  }
-
-  .stat-card .num {
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: #c0392b;
-  }
-  
-  .stat-card .label {
-    font-size: .8rem;
-    color: #555;
-    margin-top: 4px;
-  }
+  .cards { display: flex; gap: 14px; flex-wrap: wrap; margin: 20px 0; }
+  .stat-card { flex: 1; min-width: 180px; background: var(--red-lt); border-radius: var(--radius); padding: 18px; text-align: center; }
+  .stat-card .num { font-size: 1.8rem; font-weight: 800; color: var(--red); }
+  .stat-card .label { font-size: .78rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .03em; }
 
   /* Group stock tags */
-  .group-grid {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 8px;
-    margin: 20px 0;
-  }
-  @media (max-width: 768px) {
-    .group-grid {
-      grid-template-columns: repeat(4, 1fr);
-    }
-  }
-  
-  .group-box {
-    background: #fff;
-    border: 1px solid #f0d9d5;
-    border-radius: 8px;
-    padding: 10px;
-    text-align: center;
-  }
-  
-  .group-box .group-title {
-    font-size: 14px;
-    font-weight: bold;
-    color: #555;
-  }
-  
-  .group-box .group-count {
-    font-size: 12px;
-    color: #777;
-    margin-top: 2px;
-  }
-  
-  .group-box.has-stock {
-    background: #fdecea;
-    border-color: #c0392b;
-  }
-  .group-box.has-stock .group-title {
-    color: #c0392b;
-  }
+  .group-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin: 20px 0; }
+  @media (max-width: 768px) { .group-grid { grid-template-columns: repeat(4, 1fr); } }
+  .group-box { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px; text-align: center; }
+  .group-box .group-title { font-size: 14px; font-weight: 700; color: var(--muted); }
+  .group-box .group-count { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .group-box.has-stock { background: var(--red-lt); border-color: var(--red-md); }
+  .group-box.has-stock .group-title { color: var(--red); }
 
   /* Filter Panel & Cards */
-  .card {
-    background: #fff;
-    padding: 24px;
-    border-radius: 10px;
-    border: 2px solid #c0392b;
-    margin-top: 20px;
-  }
-  
-  .filter-form {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 14px;
-    align-items: flex-end;
-  }
-  
-  .filter-group {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 140px;
-  }
-  
-  .filter-group label {
-    font-size: 12px;
-    font-weight: bold;
-    color: #555;
-    margin-bottom: 4px;
-  }
-  
-  .filter-group select {
-    padding: 8px;
-    border-radius: 6px;
-    border: 1px solid #ddd;
-    background-color: #fff;
-    color: #222;
-    font-size: 13px;
-    outline: none;
-  }
-  
-  .filter-group select:focus {
-    border-color: #c0392b;
-  }
+  .card { padding: 22px 24px; margin-top: 20px; }
+  .filter-form { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+  .filter-group { display: flex; flex-direction: column; flex: 1; min-width: 140px; }
+  .filter-group label { font-size: 12px; margin-bottom: 4px; }
+  .filter-group select { padding: 8px; font-size: 13px; }
 
-  .btn {
-    padding: 8px 14px;
-    background: #c0392b;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    font-weight: bold;
-    font-size: 13px;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .btn:hover {
-    background: #a5281c;
-  }
-  
-  .btn-outline {
-    background: transparent;
-    border: 1px solid #ddd;
-    color: #555;
-  }
-  .btn-outline:hover {
-    background: #f9f9f9;
-  }
-  
-  .btn-sm {
-    padding: 4px 8px;
-    font-size: 11px;
-    border-radius: 4px;
-  }
-  
-  .btn-danger {
-    background: #c0392b;
-  }
-  .btn-danger:hover {
-    background: #a5281c;
-  }
+  .btn { padding: 8px 14px; background: var(--red); color: #fff; border: none; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+  .btn:hover { background: var(--red-dk); }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .btn-outline:hover { background: #f9f9f9; }
+  .btn-sm { padding: 4px 9px; font-size: 11px; border-radius: 6px; }
+  .btn-danger { background: var(--red); }
+  .btn-danger:hover { background: var(--red-dk); }
 
   /* Table */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-  }
-  
-  th, td {
-    border-bottom: 1px solid #f0d9d5;
-    padding: 8px;
-    text-align: left;
-    font-size: .85rem;
-  }
-  
-  th {
-    color: #777;
-    font-weight: normal;
-  }
-  
-  tr:hover td {
-    background-color: #faf5f5;
-  }
+  table { margin-top: 10px; }
+  th, td { padding: 10px 8px; font-size: .85rem; }
 
   /* Badges */
-  .badge {
-    display: inline-block;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: bold;
-  }
-  
-  .badge-available { background-color: #e6f4ea; color: #137333; }
-  .badge-reserved { background-color: #fef7e0; color: #b06000; }
-  .badge-transfused { background-color: #f1f3f4; color: #3c4043; }
-  .badge-expired { background-color: #fce8e6; color: #c5221f; }
-  .badge-discarded { background-color: #f1f3f4; color: #3c4043; }
+  .badge-available  { background-color: var(--green-lt); color: var(--green); }
+  .badge-reserved   { background-color: var(--amber-lt); color: var(--amber); }
+  .badge-transfused { background-color: var(--blue-lt);  color: var(--blue); }
+  .badge-expired    { background-color: var(--red-lt);   color: var(--red-dk); }
+  .badge-discarded  { background-color: #f1f3f4; color: #3c4043; }
 
   /* Expiry colors */
-  .expiry-critical {
-    color: #c5221f;
-    font-weight: bold;
-  }
-  .expiry-warning {
-    color: #b06000;
-    font-weight: bold;
-  }
+  .expiry-critical { color: var(--red); font-weight: 700; }
+  .expiry-warning  { color: var(--amber); font-weight: 700; }
 
   /* Select inside row */
-  .status-select {
-    padding: 4px;
-    font-size: 12px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    background: #fff;
-    outline: none;
-  }
-  
-  .status-select:focus {
-    border-color: #c0392b;
-  }
+  .status-select { padding: 5px; font-size: 12px; border-radius: 6px; }
 
-  .action-cell {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-  }
+  .action-cell { display: flex; gap: 6px; align-items: center; }
 
   .toast {
     position: fixed;
     bottom: 24px;
     right: 24px;
-    background: #222;
+    background: var(--slate);
     color: #fff;
-    padding: 10px 20px;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    padding: 11px 20px;
+    border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     font-size: 13px;
@@ -348,16 +145,15 @@ $units = $stmt->fetchAll();
     transition: opacity 0.3s, transform 0.3s;
     pointer-events: none;
   }
-  .toast.show {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  .toast.show { opacity: 1; transform: translateY(0); }
 </style>
 </head>
 <body>
 
-<div class="wrap">
+<div class="app-shell">
   <?php include __DIR__ . '/../includes/staff_nav.php'; ?>
+  <div class="main">
+  <div class="main-inner">
 
   <h1>🩸 Blood Inventory Stock</h1>
 
@@ -508,6 +304,8 @@ $units = $stmt->fetchAll();
       </tbody>
     </table>
   </div>
+  </div>
+  </div>
 </div>
 
 <div class="toast" id="toast">Notification text</div>
@@ -516,7 +314,7 @@ $units = $stmt->fetchAll();
   function showToast(text, isError = false) {
     const toast = document.getElementById('toast');
     toast.textContent = text;
-    toast.style.backgroundColor = isError ? '#c0392b' : '#222';
+    toast.style.backgroundColor = isError ? '#c0152b' : '#1e2430';
     toast.classList.add('show');
     setTimeout(() => {
       toast.classList.remove('show');
