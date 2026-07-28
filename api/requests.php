@@ -64,7 +64,7 @@ if ($method === 'POST') {
         if (empty($data[$field])) err("$field is required");
     }
 
-    // Postgres: RETURNING instead of PDO::lastInsertId() (which needs a sequence name on pgsql)
+
     $stmt = $db->prepare("
         INSERT INTO blood_request (patient_id, doctor_id, group_id, component, units_needed, urgency, status, notes)
         VALUES (:patient_id, :doctor_id, :group_id, :component, :units_needed, :urgency, 'Pending', :notes)
@@ -83,8 +83,6 @@ if ($method === 'POST') {
     normal(['request_id' => (int)$stmt->fetchColumn(), 'status' => 'Pending']);
 }
 
-// PUT /api/requests.php?id=5 -> update status only (approve/reject/fulfill logic lives in admin/approve.php)
-// body: { status: "Cancelled" }
 if ($method === 'PUT') {
     $id = (int)($_GET['id'] ?? 0);
     if (!$id) err('id is required');
