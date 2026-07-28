@@ -10,7 +10,7 @@ $db = getDB();
 $message = '';
 $error   = '';
 
-// ── FORM SUBMISSION ────────────────────────────────────────────
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $donorId   = (int)($_POST['donor_id'] ?? 0);
     $bankId    = (int)($_POST['bank_id'] ?? 0);
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ── GET OPTION LISTS ───────────────────────────────────────────
+
 $donors = $db->query('
     SELECT d.donor_id, d.name, d.phone, bg.group_name 
     FROM donor d

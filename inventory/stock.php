@@ -7,18 +7,17 @@ header('Content-Type: text/html; charset=UTF-8');
 $user = require_login(['admin', 'staff']);
 $db = getDB();
 
-// ── GET OPTION LISTS ───────────────────────────────────────────
+
 $bloodGroups = $db->query('SELECT group_id, group_name FROM blood_groups ORDER BY group_name')->fetchAll();
 $bloodBanks  = $db->query('SELECT bank_id, name FROM blood_bank ORDER BY name')->fetchAll();
 
-// ── AGGREGATE CALCULATIONS ────────────────────────────────────
-// Total Available Units
+
 $totalAvailable = (int)$db->query("SELECT COUNT(*) FROM blood_unit WHERE status = 'Available'")->fetchColumn();
 
 // Total Volume Available
 $totalVolume = (int)$db->query("SELECT COALESCE(SUM(volume_ml), 0) FROM blood_unit WHERE status = 'Available'")->fetchColumn();
 
-// Group Counts (LEFT JOIN to show 0 for groups with no stock)
+
 $groupStats = $db->query("
     SELECT bg.group_name, COUNT(bu.unit_id) AS total_count
     FROM blood_groups bg
@@ -27,7 +26,7 @@ $groupStats = $db->query("
     ORDER BY bg.group_name
 ")->fetchAll();
 
-// ── FILTER HANDLING ────────────────────────────────────────────
+
 $filterGroup     = $_GET['group_id'] ?? '';
 $filterComponent = $_GET['component'] ?? '';
 $filterBank      = $_GET['bank_id'] ?? '';
@@ -78,13 +77,12 @@ $units = $stmt->fetchAll();
   .main-inner { max-width: 1080px; }
   h1 { font-size: 20px; margin: 0 0 20px 0; }
 
-  /* Stat Grid */
   .cards { display: flex; gap: 14px; flex-wrap: wrap; margin: 20px 0; }
   .stat-card { flex: 1; min-width: 180px; background: var(--red-lt); border-radius: var(--radius); padding: 18px; text-align: center; }
   .stat-card .num { font-size: 1.8rem; font-weight: 800; color: var(--red); }
   .stat-card .label { font-size: .78rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .03em; }
 
-  /* Group stock tags */
+
   .group-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin: 20px 0; }
   @media (max-width: 768px) { .group-grid { grid-template-columns: repeat(4, 1fr); } }
   .group-box { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px; text-align: center; }
@@ -93,7 +91,7 @@ $units = $stmt->fetchAll();
   .group-box.has-stock { background: var(--red-lt); border-color: var(--red-md); }
   .group-box.has-stock .group-title { color: var(--red); }
 
-  /* Filter Panel & Cards */
+
   .card { padding: 22px 24px; margin-top: 20px; }
   .filter-form { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
   .filter-group { display: flex; flex-direction: column; flex: 1; min-width: 140px; }
@@ -108,22 +106,22 @@ $units = $stmt->fetchAll();
   .btn-danger { background: var(--red); }
   .btn-danger:hover { background: var(--red-dk); }
 
-  /* Table */
+
   table { margin-top: 10px; }
   th, td { padding: 10px 8px; font-size: .85rem; }
 
-  /* Badges */
+
   .badge-available  { background-color: var(--green-lt); color: var(--green); }
   .badge-reserved   { background-color: var(--amber-lt); color: var(--amber); }
   .badge-transfused { background-color: var(--blue-lt);  color: var(--blue); }
   .badge-expired    { background-color: var(--red-lt);   color: var(--red-dk); }
   .badge-discarded  { background-color: #f1f3f4; color: #3c4043; }
 
-  /* Expiry colors */
+
   .expiry-critical { color: var(--red); font-weight: 700; }
   .expiry-warning  { color: var(--amber); font-weight: 700; }
 
-  /* Select inside row */
+
   .status-select { padding: 5px; font-size: 12px; border-radius: 6px; }
 
   .action-cell { display: flex; gap: 6px; align-items: center; }
@@ -169,7 +167,7 @@ $units = $stmt->fetchAll();
     </div>
   </div>
 
-  <!-- Blood Group Stock Status -->
+
   <div class="group-grid">
     <?php foreach ($groupStats as $stat): ?>
       <?php $hasStock = (int)$stat['total_count'] > 0; ?>
@@ -180,7 +178,7 @@ $units = $stmt->fetchAll();
     <?php endforeach; ?>
   </div>
 
-  <!-- Filter Panel -->
+
   <div class="card">
     <form class="filter-form" method="GET">
       <div class="filter-group">
@@ -234,7 +232,7 @@ $units = $stmt->fetchAll();
     </form>
   </div>
 
-  <!-- Detailed Stock List -->
+
   <div class="table-container">
     <table>
       <thead>
@@ -334,7 +332,6 @@ $units = $stmt->fetchAll();
       if (data.success) {
         showToast('Unit #' + unitId + ' status updated to ' + status + '.');
         
-        // Update the badge styling classes
         const badge = document.getElementById('badge-' + unitId);
         badge.textContent = status;
         badge.className = 'badge badge-' + status.toLowerCase();
@@ -360,7 +357,6 @@ $units = $stmt->fetchAll();
       if (data.success) {
         showToast('Unit #' + unitId + ' has been permanently deleted.');
         
-        // Fade out and remove the row from the table
         const row = document.getElementById('unit-row-' + unitId);
         row.style.transition = 'all 0.5s ease';
         row.style.opacity = '0';
