@@ -81,137 +81,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Register — Blood Bank Management System</title>
+<title>Register — HemoLink</title>
+<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/theme.css">
 <style>
-  body { 
-    font-family: Arial, sans-serif; 
-    background:#ffffff; 
-    color:#222; 
-    display:flex; 
-    align-items:center; 
-    justify-content:center; 
-    min-height:100vh; 
-    margin:0; 
-    padding:24px 0; 
+  body {
+    display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; padding:24px 0;
+    background: radial-gradient(circle at 15% 15%, #2a3140 0%, var(--slate) 45%, #14171f 100%);
   }
-  .card { 
-    background:#ffffff; 
-    padding:32px; 
-    border-radius:10px; 
-    width:340px; 
-    border:2px solid #c0392b; 
-    box-shadow:0 4px 16px rgba(192,57,43,0.15); 
-  }
-  h1 { 
-    font-size:20px; 
-    margin-bottom:20px; 
-    text-align:center; 
-    color:#c0392b; 
-  }
-  label { 
-    display:block; 
-    font-size:13px; 
-    margin:12px 0 4px; 
-    color:#555; 
-  }
-  input, select { 
-    width:100%; 
-    padding:10px; 
-    border-radius:6px; 
-    border:1px solid #ddd; 
-    background:#fff; 
-    color:#222; 
-    box-sizing:border-box; 
-  }
-  input:focus, 
-  select:focus { 
-    outline:none; 
-    border-color:#c0392b; 
-  }
-  .pw-wrap { 
-    position:relative; 
-  }
-  .pw-wrap input { 
-    padding-right:40px; 
-  }
-  .pw-toggle { 
-    position:absolute; 
-    right:10px; top:50%; 
-    transform:translateY(-50%); 
-    background:none; border:none; 
-    width:auto; 
-    margin:0; 
-    padding:4px; 
-    cursor:pointer; 
-    display:flex; 
-    align-items:center; 
-    color:#888; 
-  }
-  .pw-toggle:hover { 
-    background:none; 
-    color:#c0392b; 
-  }
-  .pw-toggle svg { 
-    width:18px; 
-    height:18px; 
-  }
-
-  button { 
-    width:100%; 
-    margin-top:20px; 
-    padding:10px; 
-    border:none; 
-    border-radius:6px; 
-    background:#c0392b; 
-    color:#fff; 
-    font-weight:bold; 
-    cursor:pointer; 
-  }
-  button:hover { 
-    background:#a5281c; 
-  }
-  .error { 
-    background:#fdecea; 
-    color:#c0392b; 
-    padding:10px; 
-    border-radius:6px; 
-    font-size:13px; 
-    margin-top:12px; 
-    border:1px solid #f5c6c1; 
-  }
-  .error ul { 
-    margin:4px 0 0 18px; 
-    padding:0; 
-  }
-  .info { 
-    background:#fdecea; 
-    color:#c0392b; 
-    padding:10px; 
-    border-radius:6px; 
-    font-size:13px; 
-    margin-top:12px; 
-  }
-  p.link { 
-    text-align:center; 
-    margin-top:16px; 
-    font-size:13px; 
-    color:#555; 
-  }
-  a { 
-    color:#c0392b; 
-  }
-  .row { 
-    display:flex; 
-    gap:10px; 
-  }
-  .row > div { 
-    flex:1; 
-    }
+  .card { padding:32px; width:360px; box-shadow: 0 24px 60px -20px rgba(0,0,0,.45); }
+  .back { display:block; text-align:center; font-size:12px; color:var(--muted); text-decoration:none; margin-bottom:16px; }
+  .back:hover { color: var(--red); }
+  h1 { font-size:20px; margin-bottom:20px; text-align:center; color: var(--ink); }
+  label { display:block; font-size:13px; margin:12px 0 4px; color:#555; }
+  input, select { width:100%; padding:10px; box-sizing:border-box; }
+  .pw-wrap { position:relative; }
+  .pw-wrap input { padding-right:40px; }
+  .pw-toggle { position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; width:auto; margin:0; padding:4px; cursor:pointer; display:flex; align-items:center; color:#888; }
+  .pw-toggle:hover { background:none; color:var(--red); }
+  .pw-toggle svg { width:18px; height:18px; }
+  button { width:100%; margin-top:20px; padding:11px; border:none; background:var(--red); color:#fff; }
+  button:hover { background:var(--red-dk); }
+  p.link { text-align:center; margin-top:16px; font-size:13px; color:#555; }
+  .row { display:flex; gap:10px; }
+  .row > div { flex:1; }
 </style>
 </head>
 <body>
 <div class="card">
-  <h1>🩸 Donor Registration</h1>
+  <a class="back" href="<?= BASE_URL ?>index.php">&larr; Back to home</a>
+  <h1>&#129656; Donor Registration</h1>
 
   <?php if ($errors): ?>
     <div class="error"><ul><?php foreach ($errors as $e): ?><li><?= htmlspecialchars($e) ?></li><?php endforeach; ?></ul></div>

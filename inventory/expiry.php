@@ -7,8 +7,6 @@ header('Content-Type: text/html; charset=UTF-8');
 $user = require_login(['admin', 'staff']);
 $db = getDB();
 
-// ── GET EXPIRING UNITS ─────────────────────────────────────────
-// Fetch units where status is 'Available' and expiry_date is within 7 days (or already past)
 $sql = "
     SELECT bu.unit_id, bu.component, bu.volume_ml, bu.collection_date, bu.expiry_date, bu.status,
            bg.group_name, d.name AS donor_name, d.phone AS donor_phone, bb.name AS bank_name
@@ -51,12 +49,12 @@ $expiringUnits = $stmt->fetchAll();
   .expiry-alert-banner .title { font-weight: 700; font-size: 14px; }
   .expiry-alert-banner .desc { font-size: 13px; color: #7a3a3a; margin-top: 4px; }
 
-  /* Table */
+ 
   .table-container { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 8px 20px; }
   table { margin-top: 4px; }
   th, td { padding: 10px 8px; font-size: .85rem; }
 
-  /* Expiry Indicators */
+
   .days-expired  { background-color: var(--red-lt); color: var(--red-dk); border: 1px solid var(--red-md); }
   .days-critical { background-color: var(--amber-lt); color: var(--amber); border: 1px solid #f6dcb0; }
   .days-warning  { background-color: var(--blue-lt); color: var(--blue); border: 1px solid #c2d6ff; }
