@@ -2,8 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../connect.php';
 require_once __DIR__ . '/../includes/auth.php';
-header('Content-Type: text/html; charset=UTF-8'); // override connect.php's JSON header — this page renders HTML
-
+header('Content-Type: text/html; charset=UTF-8');
 $user = require_login(['donor']);
 $db = getDB();
 
@@ -60,43 +59,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>My Profile — Blood Bank Management System</title>
+<title>My Profile — HemoLink</title>
+<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/theme.css">
 <style>
-  body { font-family: Arial, sans-serif; background:#ffffff; color:#222; margin:0; padding:24px; }
-  .wrap { max-width:520px; margin:0 auto; }
-  nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; font-size:14px; }
-  nav a { color:#c0392b; text-decoration:none; margin-left:14px; }
-  .card { background:#fff; padding:28px; border-radius:10px; border:2px solid #c0392b; }
-  h1 { font-size:20px; margin:0 0 6px; color:#222; }
-  .sub { color:#777; font-size:13px; margin-bottom:20px; }
-  .badge { display:inline-block; background:#c0392b; color:#fff; padding:3px 10px; border-radius:20px; font-size:12px; margin-left:8px; }
-  .stat-row { display:flex; gap:12px; margin-bottom:20px; }
-  .stat { flex:1; background:#fdecea; border-radius:8px; padding:12px; text-align:center; }
-  .stat b { display:block; font-size:18px; color:#c0392b; }
-  .stat span { font-size:11px; color:#777; }
-  label { display:block; font-size:13px; margin:12px 0 4px; color:#555; }
-  input, select { width:100%; padding:10px; border-radius:6px; border:1px solid #ddd; background:#fff; color:#222; box-sizing:border-box; }
-  input[readonly] { color:#999; background:#f7f7f7; }
-  button { margin-top:20px; padding:10px 20px; border:none; border-radius:6px; background:#c0392b; color:#fff; font-weight:bold; cursor:pointer; }
-  button:hover { background:#a5281c; }
+  body { margin:0; }
+  .main-inner { max-width:560px; }
+  .card { padding:30px; }
+  h1 { font-size:21px; margin:0 0 6px; }
+  .sub { color:var(--muted); font-size:13px; margin-bottom:20px; }
+  .badge { background:var(--red); color:#fff; margin-left:8px; }
+  .stat-row { display:flex; gap:12px; margin-bottom:22px; }
+  .stat { flex:1; background:var(--red-lt); border-radius:var(--radius-sm); padding:14px; text-align:center; }
+  .stat b { display:block; font-size:19px; color:var(--red); }
+  .stat span { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; }
+  label { margin:12px 0 4px; }
+  input, select { width:100%; padding:10px; box-sizing:border-box; }
+  input[readonly] { color:#9aa0aa; background:#f7f7f7; }
+  button { padding:11px 22px; border:none; background:var(--red); color:#fff; }
+  button:hover { background:var(--red-dk); }
   .row { display:flex; gap:10px; }
   .row > div { flex:1; }
-  .msg { background:#fdecea; color:#c0392b; padding:10px; border-radius:6px; font-size:13px; margin-bottom:16px; border:1px solid #f5c6c1; }
-  .error { background:#fdecea; color:#c0392b; padding:10px; border-radius:6px; font-size:13px; margin-bottom:16px; }
+  .msg { margin-bottom:16px; background:var(--green-lt); color:#14532d; border:1px solid #bfe3cd; padding:11px 14px; border-radius:var(--radius-sm); font-size:.88rem; }
+  .error { margin-bottom:16px; background:var(--red-lt); color:var(--red-dk); padding:11px 14px; border-radius:var(--radius-sm); font-size:.88rem; }
   .error ul { margin:4px 0 0 18px; padding:0; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <nav>
-    <div><strong>🩸 Blood Bank</strong></div>
-    <div>
-      <a href="profile.php">Profile</a>
-      <a href="history.php">Donation History</a>
-      <a href="../logout.php">Logout</a>
-    </div>
-  </nav>
+<div class="app-shell">
+  <?php include __DIR__ . '/../includes/donor_nav.php'; ?>
 
+  <div class="main">
+  <div class="main-inner">
   <div class="card">
     <h1>Welcome, <?= htmlspecialchars($donor['name']) ?> <span class="badge"><?= htmlspecialchars($donor['group_name']) ?></span></h1>
     <div class="sub">Eligibility: <?= $donor['is_eligible'] ? 'Eligible to donate' : 'Not currently eligible' ?> · <?= htmlspecialchars($donor['health_status']) ?></div>
@@ -144,6 +137,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       <button type="submit">Save Changes</button>
     </form>
+  </div>
+  </div>
   </div>
 </div>
 </body>

@@ -2,8 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/connect.php';
 require_once __DIR__ . '/includes/auth.php';
-header('Content-Type: text/html; charset=UTF-8'); // override connect.php's JSON header — this page renders HTML
-
+header('Content-Type: text/html; charset=UTF-8'); 
 $db = getDB();
 $groups = $db->query('SELECT group_id, group_name FROM blood_groups ORDER BY group_name')->fetchAll();
 
