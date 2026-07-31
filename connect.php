@@ -7,7 +7,8 @@ function getDB(): PDO {
     static $connect = null;
     if ($connect !== null) return $connect;
 
-    $data_source = "pgsql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME;
+    $sslmode = getenv('DB_SSLMODE') ?: 'prefer';
+    $data_source = "pgsql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";sslmode=" . $sslmode;
 
     try {
         $connect = new PDO($data_source, DB_USER, DB_PASS, [
