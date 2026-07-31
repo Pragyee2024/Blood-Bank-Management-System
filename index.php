@@ -17,8 +17,14 @@ if ($u = current_user()) {
 <title>HemoLink — Blood Bank Management System</title>
 <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/theme.css">
 <style>
-  body { margin: 0; background: var(--white); }
-  a { text-decoration: none; }
+  body { 
+    margin: 0; 
+    background: var(--white); 
+  }
+
+  a { 
+    text-decoration: none; 
+  }
 
   /* Top bar */
   .topbar {
@@ -452,7 +458,7 @@ if ($u = current_user()) {
 
 <section class="hero">
   <span class="eyebrow">Digital Blood Bank Management</span>
-  <h1>Connecting <span>donors</span>, hospitals, and blood banks — in one place.</h1>
+  <h1>Connecting <span>donors</span>, hospitals, and blood banks in one place.</h1>
   <p class="tagline">HemoLink digitizes blood collection, inventory, and requests so hospitals get the right blood group, on time, every time.</p>
   <div class="cta-row">
     <a class="cta-primary" href="<?= BASE_URL ?>register.php">New Donor? Register</a>
