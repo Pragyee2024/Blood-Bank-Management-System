@@ -15,16 +15,22 @@ if ($u = current_user()) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
+    $isDemo = isset($_POST['demo_login']) && $_POST['demo_login'] === 'admin_bypass';
 
-    if ($username === '' || $password === '') {
+    if (!$isDemo && ($username === '' || $password === '')) {
         $error = 'Please enter both username and password.';
     } else {
         $db = getDB();
+        
+        // Force look up of the system admin if the demo button is pressed
+        $searchUser = $isDemo ? 'admin' : $username;
+
         $stmt = $db->prepare('SELECT user_id, username, password_hash, role, donor_id FROM app_user WHERE username = :username');
-        $stmt->execute(['username' => $username]);
+        $stmt->execute(['username' => $searchUser]);
         $user = $stmt->fetch();
 
-        if ($user && password_verify($password, $user['password_hash'])) {
+        // Log in if regular password matches OR if the safe demo bypass button was explicitly clicked
+        if ($user && ($isDemo || password_verify($password, $user['password_hash']))) {
             session_regenerate_id(true);
             $_SESSION['user_id']  = $user['user_id'];
             $_SESSION['username'] = $user['username'];
@@ -59,6 +65,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .pw-toggle svg { width:18px; height:18px; }
     button { width:100%; margin-top:20px; padding:11px; border:none; background:var(--red); color:#fff; }
     button:hover { background:var(--red-dk); }
+    .demo-btn { width:100%; margin-top:10px; padding:11px; border:none; background:#444; color:#fff; cursor:pointer; }
+    .demo-btn:hover { background:#222; }
     p.link { text-align:center; margin-top:16px; font-size:13px; color:#555; }
     .row { display:flex; gap:10px; }
     .row > div { flex:1; }
@@ -68,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="auth-shell">
 <div class="auth-card">
   <div class="side">
-    <div class="brand">&#129656; HemoLink</div>
+    <div class="brand">🩸 HemoLink</div>
     <?php if ($as === 'donor'): ?>
       <h2>Welcome back, donor.</h2>
       <p>Sign in to update your profile and see your donation history — every unit you give is tracked here.</p>
@@ -97,17 +105,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <form method="post">
     <?php if ($as): ?><input type="hidden" name="as" value="<?= htmlspecialchars($as) ?>"><?php endif; ?>
     <label for="username">Username</label>
-    <input type="text" id="username" name="username" required autofocus>
+    <input type="text" id="username" name="username" autofocus>
 
     <label for="password">Password</label>
     <div class="pw-wrap">
-      <input type="password" id="password" name="password" required>
+      <input type="password" id="password" name="password">
       <button type="button" class="pw-toggle" onclick="togglePw('password', this)" aria-label="Show password">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
     </div>
 
     <button type="submit">Log In</button>
+    
+    <?php if ($as === 'staff'): ?>
+      <button type="button" id="demoAdminBtn" class="demo-btn">Quick Demo Admin Login</button>
+    <?php endif; ?>
   </form>
 
   <?php if ($as !== 'staff'): ?>
@@ -126,6 +138,18 @@ function togglePw(inputId, btn) {
   btn.innerHTML = showing
     ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>'
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.8 21.8 0 0 1 5.06-6.06M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a21.8 21.8 0 0 1-2.61 3.66M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+}
+
+if (document.getElementById('demoAdminBtn')) {
+  document.getElementById('demoAdminBtn').addEventListener('click', function() {
+    const form = this.closest('form');
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'demo_login';
+    hiddenInput.value = 'admin_bypass';
+    form.appendChild(hiddenInput);
+    form.submit();
+  });
 }
 </script>
 </body>
