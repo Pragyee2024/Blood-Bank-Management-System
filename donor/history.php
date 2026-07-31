@@ -2,94 +2,111 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../connect.php';
 require_once __DIR__ . '/../includes/auth.php';
-header('Content-Type: text/html; charset=UTF-8'); // override connect.php's JSON header — this page renders HTML
-
+header('Content-Type: text/html; charset=UTF-8'); 
 $user = require_login(['donor']);
 $db = getDB();
 
-$stmt = $db->prepare(
-    'SELECT bu.unit_id, bu.component, bu.volume_ml, bu.collection_date,
-            bu.expiry_date, bu.status, bb.name AS bank_name, bg.group_name
-     FROM blood_unit bu
-     JOIN blood_bank bb   ON bb.bank_id = bu.bank_id
-     JOIN blood_groups bg ON bg.group_id = bu.group_id
-     WHERE bu.donor_id = :id
-     ORDER BY bu.collection_date DESC'
-);
-$stmt->execute(['id' => $user['donor_id']]);
-$history = $stmt->fetchAll();
+function fetchDonor(PDO $db, int $donor_id): ?array {
+    $stmt = $db->prepare(
+        'SELECT d.*, bg.group_name
+         FROM donor d JOIN blood_groups bg ON bg.group_id = d.group_id
+         WHERE d.donor_id = :id'
+    );
+    $stmt->execute(['id' => $donor_id]);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
 
-$statusColor = [
-    'Available'  => '#2e7d32',
-    'Reserved'   => '#f9a825',
-    'Transfused' => '#1565c0',
-    'Expired'    => '#616161',
-    'Discarded'  => '#c62828',
-];
+$donor = fetchDonor($db, (int)$user['donor_id']);
+if (!$donor) { err('Donor record not found.', 404); }
+
+$stmt = $db->prepare("
+    SELECT bu.unit_id, bu.component, bu.volume_ml, bu.collection_date, bu.expiry_date,
+           bu.status, bb.name AS bank_name
+    FROM blood_unit bu
+    JOIN blood_bank bb ON bb.bank_id = bu.bank_id
+    WHERE bu.donor_id = :donor_id
+    ORDER BY bu.collection_date DESC, bu.unit_id DESC
+");
+$stmt->execute(['donor_id' => $donor['donor_id']]);
+$donations = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Donation History — Blood Bank Management System</title>
+<title>Donation History — HemoLink</title>
+<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/theme.css">
 <style>
-  body { font-family: Arial, sans-serif; background:#ffffff; color:#222; margin:0; padding:24px; }
-  .wrap { max-width:760px; margin:0 auto; }
-  nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; font-size:14px; }
-  nav a { color:#c0392b; text-decoration:none; margin-left:14px; }
-  .card { background:#fff; padding:28px; border-radius:10px; border:2px solid #c0392b; }
-  h1 { font-size:20px; margin:0 0 20px; color:#222; }
-  table { width:100%; border-collapse:collapse; font-size:13px; }
-  th, td { text-align:left; padding:10px 8px; border-bottom:1px solid #f0d9d5; }
-  th { color:#777; font-weight:normal; }
-  .pill { padding:3px 10px; border-radius:20px; font-size:11px; color:#fff; }
-  .empty { text-align:center; color:#999; padding:30px 0; }
+  body { margin:0; }
+  .main-inner { max-width:820px; }
+  .card { padding:30px; }
+  h1 { font-size:21px; margin:0 0 6px; }
+  .sub { color:var(--muted); font-size:13px; margin-bottom:20px; }
+  .badge { background:var(--red); color:#fff; margin-left:8px; }
+  .stat-row { display:flex; gap:12px; margin-bottom:22px; }
+  .stat { flex:1; background:var(--red-lt); border-radius:var(--radius-sm); padding:14px; text-align:center; }
+  .stat b { display:block; font-size:19px; color:var(--red); }
+  .stat span { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; }
+  .status-pill { display:inline-block; font-size:.72rem; font-weight:700; padding:3px 10px; border-radius:999px; }
+  .status-Available   { background: var(--green-lt); color:#14532d; }
+  .status-Reserved    { background: var(--gold-lt);  color:var(--gold); }
+  .status-Transfused  { background: var(--blue-lt);  color:var(--blue); }
+  .status-Expired      { background: var(--red-lt);   color:var(--red-dk); }
+  .status-Discarded    { background: #eee;            color:#666; }
+  .empty { text-align:center; padding:36px 12px; color:var(--muted); }
+  .empty .icon { font-size:32px; margin-bottom:10px; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <nav>
-    <div><strong>🩸 Blood Bank</strong></div>
-    <div>
-      <a href="profile.php">Profile</a>
-      <a href="history.php">Donation History</a>
-      <a href="../logout.php">Logout</a>
-    </div>
-  </nav>
+<div class="app-shell">
+  <?php include __DIR__ . '/../includes/donor_nav.php'; ?>
 
+  <div class="main">
+  <div class="main-inner">
   <div class="card">
-    <h1>My Donation History</h1>
+    <h1>Donation History <span class="badge"><?= htmlspecialchars($donor['group_name']) ?></span></h1>
+    <div class="sub">Every unit you've donated, tracked from collection to use.</div>
 
-    <?php if (!$history): ?>
-      <div class="empty">No donations recorded yet.</div>
+    <div class="stat-row">
+      <div class="stat"><b><?= (int)$donor['total_donations'] ?></b><span>Total Donations</span></div>
+      <div class="stat"><b><?= $donor['last_donation'] ? htmlspecialchars($donor['last_donation']) : '—' ?></b><span>Last Donation</span></div>
+    </div>
+
+    <?php if (!$donations): ?>
+      <div class="empty">
+        <div class="icon">&#129656;</div>
+        You haven't made any recorded donations yet.<br>
+        Once a blood bank logs a donation under your name, it will show up here.
+      </div>
     <?php else: ?>
       <table>
         <thead>
           <tr>
             <th>Date</th>
             <th>Component</th>
-            <th>Group</th>
-            <th>Volume</th>
-            <th>Bank</th>
+            <th>Volume (ml)</th>
+            <th>Blood Bank</th>
             <th>Expiry</th>
             <th>Status</th>
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($history as $h): ?>
-          <tr>
-            <td><?= htmlspecialchars($h['collection_date']) ?></td>
-            <td><?= htmlspecialchars($h['component']) ?></td>
-            <td><?= htmlspecialchars($h['group_name']) ?></td>
-            <td><?= (int)$h['volume_ml'] ?> ml</td>
-            <td><?= htmlspecialchars($h['bank_name']) ?></td>
-            <td><?= htmlspecialchars($h['expiry_date']) ?></td>
-            <td><span class="pill" style="background:<?= $statusColor[$h['status']] ?? '#555' ?>"><?= htmlspecialchars($h['status']) ?></span></td>
-          </tr>
+          <?php foreach ($donations as $d): ?>
+            <tr>
+              <td><?= htmlspecialchars(date('d M Y', strtotime($d['collection_date']))) ?></td>
+              <td><?= htmlspecialchars($d['component']) ?></td>
+              <td><?= (int)$d['volume_ml'] ?></td>
+              <td><?= htmlspecialchars($d['bank_name']) ?></td>
+              <td><?= htmlspecialchars(date('d M Y', strtotime($d['expiry_date']))) ?></td>
+              <td><span class="status-pill status-<?= htmlspecialchars($d['status']) ?>"><?= htmlspecialchars($d['status']) ?></span></td>
+            </tr>
           <?php endforeach; ?>
         </tbody>
       </table>
     <?php endif; ?>
+  </div>
+  </div>
   </div>
 </div>
 </body>

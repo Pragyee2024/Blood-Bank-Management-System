@@ -2,11 +2,44 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../connect.php';
 require_once __DIR__ . '/../includes/auth.php';
-header('Content-Type: text/html; charset=UTF-8'); 
+header('Content-Type: text/html; charset=UTF-8'); // override connect.php's JSON header — this page renders HTML
 
 $user = require_login(['admin', 'staff']);
 $db = getDB();
 
+/*AB+ is the universal recipient (accepts all)*/
+$compatibility = [
+    'A+'  => ['A+', 'A-', 'O+', 'O-'],
+    'A-'  => ['A-', 'O-'],
+    'B+'  => ['B+', 'B-', 'O+', 'O-'],
+    'B-'  => ['B-', 'O-'],
+    'AB+' => ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'], // Universal Recipient
+    'AB-' => ['A-', 'B-', 'AB-', 'O-'],
+    'O+'  => ['O+', 'O-'],
+    'O-'  => ['O-'], // Universal Donor (but can only receive O-)
+];
+
+
+function compatibleDonorGroupIds(PDO $db, array $compatibility, int $recipientGroupId): array {
+    $stmt = $db->prepare("SELECT group_name FROM blood_groups WHERE group_id = :gid");
+    $stmt->execute([':gid' => $recipientGroupId]);
+    $recipientName = $stmt->fetchColumn();
+    if (!$recipientName) return [];
+
+    $donorNames = $compatibility[$recipientName] ?? [$recipientName];
+
+    $placeholders = [];
+    $params = [];
+    foreach ($donorNames as $i => $name) {
+        $ph = ":n$i";
+        $placeholders[] = $ph;
+        $params[$ph] = $name;
+    }
+
+    $idStmt = $db->prepare("SELECT group_id FROM blood_groups WHERE group_name IN (" . implode(',', $placeholders) . ")");
+    $idStmt->execute($params);
+    return array_map('intval', $idStmt->fetchAll(PDO::FETCH_COLUMN));
+}
 
 $requestId = (int)($_GET['request_id'] ?? $_POST['request_id'] ?? 0);
 $message = '';
@@ -31,52 +64,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$req) throw new Exception('Request not found.');
             if ($req['status'] !== 'Pending') throw new Exception('Request is not pending.');
 
-            
+            $compatibleIds = compatibleDonorGroupIds($db, $compatibility, (int)$req['group_id']);
+            if (!$compatibleIds) throw new Exception('Could not resolve a compatible blood group for this request.');
+
+        
+            $idPh = [];
+            foreach ($compatibleIds as $i => $gid) { $idPh[] = ":gid$i"; }
+
             $unitStmt = $db->prepare("
                 SELECT unit_id FROM blood_unit
-                WHERE group_id IN ($inClause) AND component = :component AND status = 'Available'
-                ORDER BY 
-                    CASE WHEN group_id = :exact_group_id THEN 0 ELSE 1 END,
-                    expiry_date ASC
+                WHERE group_id IN (" . implode(',', $idPh) . ")
+                  AND component = :component
+                  AND status = 'Available'
+                ORDER BY (group_id = :exact_gid) DESC, expiry_date ASC
                 LIMIT :needed
                 FOR UPDATE
             ");
+            foreach ($compatibleIds as $i => $gid) {
+                $unitStmt->bindValue(":gid$i", $gid, PDO::PARAM_INT);
+            }
             $unitStmt->bindValue(':component', $req['component'], PDO::PARAM_STR);
-            $unitStmt->bindValue(':exact_group_id', $req['group_id'], PDO::PARAM_INT);
+            $unitStmt->bindValue(':exact_gid', (int)$req['group_id'], PDO::PARAM_INT);
             $unitStmt->bindValue(':needed', (int)$req['units_needed'], PDO::PARAM_INT);
             $unitStmt->execute();
             $units = $unitStmt->fetchAll(PDO::FETCH_COLUMN);
 
             if (count($units) < (int)$req['units_needed']) {
-                throw new Exception('Not enough compatible available units in stock for this request.');
+                throw new Exception('Not enough compatible units in stock for this group/component.');
             }
 
             $reserve = $db->prepare("UPDATE blood_unit SET status = 'Reserved' WHERE unit_id = :uid");
-            $transfusion = $db->prepare("
-                INSERT INTO transfusion (request_id, unit_id, doctor_id, outcome, notes)
-                VALUES (:rid, :uid, :did, 'Pending', 'Reserved compatible unit')
+            $linkTransfusion = $db->prepare("
+                INSERT INTO transfusion (request_id, unit_id, doctor_id, outcome)
+                VALUES (:request_id, :unit_id, :doctor_id, 'Pending')
             ");
-
             foreach ($units as $uid) {
                 $reserve->execute([':uid' => $uid]);
-                $transfusion->execute([
-                    ':rid' => $requestId,
-                    ':uid' => $uid,
-                    ':did' => $req['doctor_id']
-                ]);
-
                 $db->prepare("
                     INSERT INTO inventory_log (bank_id, unit_id, group_id, component, action, performed_by)
                     SELECT bank_id, unit_id, group_id, component, 'Reserved', 'Admin'
                     FROM blood_unit WHERE unit_id = :uid
                 ")->execute([':uid' => $uid]);
+
+            
+                $linkTransfusion->execute([
+                    ':request_id' => $requestId,
+                    ':unit_id'    => $uid,
+                    ':doctor_id'  => $req['doctor_id'],
+                ]);
             }
 
             $db->prepare("UPDATE blood_request SET status = 'Processing' WHERE request_id = :id")
                ->execute([':id' => $requestId]);
 
             $db->commit();
-            $message = "Request #$requestId approved. " . count($units) . " compatible unit(s) reserved.";
+            $message = "Request #$requestId approved. " . count($units) . " unit(s) reserved.";
         } catch (Exception $e) {
             $db->rollBack();
             $error = $e->getMessage();
@@ -86,83 +128,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
            ->execute([':id' => $requestId]);
         $message = "Request #$requestId rejected.";
     } elseif ($action === 'fulfill') {
+        
         try {
             $db->beginTransaction();
 
-            // Find all reserved units linked to this request
-            $stmt = $db->prepare("
-                SELECT t.unit_id 
-                FROM transfusion t
-                JOIN blood_unit bu ON bu.unit_id = t.unit_id
-                WHERE t.request_id = :rid AND bu.status = 'Reserved'
+            $rStmt = $db->prepare("SELECT * FROM blood_request WHERE request_id = :id FOR UPDATE");
+            $rStmt->execute([':id' => $requestId]);
+            $reqRow = $rStmt->fetch();
+            if (!$reqRow) throw new Exception('Request not found.');
+
+            $upd = $db->prepare("
+                UPDATE blood_unit
+                SET status = 'Transfused'
+                WHERE unit_id IN (SELECT unit_id FROM transfusion WHERE request_id = :id)
+                  AND status = 'Reserved'
             ");
-            $stmt->execute([':rid' => $requestId]);
-            $units = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            $upd->execute([':id' => $requestId]);
 
-            $updateUnit = $db->prepare("UPDATE blood_unit SET status = 'Available' WHERE unit_id = :uid");
-            foreach ($units as $uid) {
-                $updateUnit->execute([':uid' => $uid]);
+            $db->prepare("
+                UPDATE transfusion
+                SET outcome = 'Successful', transfusion_date = CURRENT_TIMESTAMP
+                WHERE request_id = :id
+            ")->execute([':id' => $requestId]);
 
-                $db->prepare("
-                    INSERT INTO inventory_log (bank_id, unit_id, group_id, component, action, performed_by)
-                    SELECT bank_id, unit_id, group_id, component, 'Discarded', 'Admin'
-                    FROM blood_unit WHERE unit_id = :uid
-                ")->execute([':uid' => $uid]);
-            }
-
-            // Remove the links from the transfusion table
-            $db->prepare("DELETE FROM transfusion WHERE request_id = :rid")
-               ->execute([':rid' => $requestId]);
-
-            // Set request status to Cancelled
-            $db->prepare("UPDATE blood_request SET status = 'Cancelled' WHERE request_id = :id")
-               ->execute([':id' => $requestId]);
-
-            $db->commit();
-            $message = "Request #$requestId cancelled. " . count($units) . " reserved unit(s) released back to stock.";
-        } catch (Exception $e) {
-            $db->rollBack();
-            $error = $e->getMessage();
-        }
-    } elseif ($action === 'fulfill') {
-        try {
-            $db->beginTransaction();
-
-            // Fetch linked reserved units
-            $stmt = $db->prepare("
-                SELECT t.unit_id 
-                FROM transfusion t
-                JOIN blood_unit bu ON bu.unit_id = t.unit_id
-                WHERE t.request_id = :rid AND bu.status = 'Reserved'
-            ");
-            $stmt->execute([':rid' => $requestId]);
-            $units = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-            if (empty($units)) {
-                throw new Exception('No reserved units found to fulfill this request.');
-            }
-
-            $updateUnit = $db->prepare("UPDATE blood_unit SET status = 'Transfused' WHERE unit_id = :uid");
-            foreach ($units as $uid) {
-                $updateUnit->execute([':uid' => $uid]);
-
-                $db->prepare("
-                    INSERT INTO inventory_log (bank_id, unit_id, group_id, component, action, performed_by)
-                    SELECT bank_id, unit_id, group_id, component, 'Transfused', 'Admin'
-                    FROM blood_unit WHERE unit_id = :uid
-                ")->execute([':uid' => $uid]);
-            }
-
-            // Set transfusion outcomes to Successful
-            $db->prepare("UPDATE transfusion SET outcome = 'Successful' WHERE request_id = :rid")
-               ->execute([':rid' => $requestId]);
-
-            // Set request status to Fulfilled
             $db->prepare("UPDATE blood_request SET status = 'Fulfilled' WHERE request_id = :id")
                ->execute([':id' => $requestId]);
-
             $db->commit();
-            $message = "Request #$requestId marked fulfilled. " . count($units) . " unit(s) transfused.";
+            $message = "Request #$requestId marked fulfilled.";
         } catch (Exception $e) {
             $db->rollBack();
             $error = $e->getMessage();
@@ -181,60 +173,6 @@ $stmt = $db->prepare("
 ");
 $stmt->execute([':id' => $requestId]);
 $req = $stmt->fetch();
-
-$oMinusWarning = '';
-if ($req && $req['status'] === 'Pending') {
-    $compatibleIds = [(int)$req['group_id']];
-    $reqGroupName = $groupNames[(int)$req['group_id']] ?? '';
-    if ($reqGroupName && isset($compatibility[$reqGroupName])) {
-        $compatibleIds = [];
-        foreach ($compatibility[$reqGroupName] as $name) {
-            if (isset($groupMap[$name])) {
-                $compatibleIds[] = $groupMap[$name];
-            }
-        }
-    }
-    
-    // Simulate selection
-    $inClause = implode(',', $compatibleIds);
-    $simStmt = $db->prepare("
-        SELECT group_id FROM blood_unit
-        WHERE group_id IN ($inClause) AND component = :component AND status = 'Available'
-        ORDER BY 
-            CASE WHEN group_id = :exact_group_id THEN 0 ELSE 1 END,
-            expiry_date ASC
-        LIMIT :needed
-    ");
-    $simStmt->bindValue(':component', $req['component'], PDO::PARAM_STR);
-    $simStmt->bindValue(':exact_group_id', $req['group_id'], PDO::PARAM_INT);
-    $simStmt->bindValue(':needed', (int)$req['units_needed'], PDO::PARAM_INT);
-    $simStmt->execute();
-    $matchedGroupIds = $simStmt->fetchAll(PDO::FETCH_COLUMN);
-
-    $oMinusId = $groupMap['O-'] ?? null;
-    $willUseOMinus = false;
-    foreach ($matchedGroupIds as $mgid) {
-        if ((int)$mgid === $oMinusId) {
-            $willUseOMinus = true;
-            break;
-        }
-    }
-
-    if ($oMinusId && $willUseOMinus) {
-        $stmtCount = $db->prepare("SELECT COUNT(*) FROM blood_unit WHERE group_id = :gid AND status = 'Available'");
-        $stmtCount->execute([':gid' => $oMinusId]);
-        $oMinusStockCount = (int)$stmtCount->fetchColumn();
-
-        $isUrgent = in_array($req['urgency'], ['High', 'Critical'], true);
-        if (!$isUrgent && $oMinusStockCount <= 3) {
-            if ($reqGroupName === 'O-') {
-                $oMinusWarning = "Alert: Universal donor O- supply is critically low (only $oMinusStockCount unit(s) remaining). However, the patient is O- and can only receive O-. Ensure immediate replenishment.";
-            } else {
-                $oMinusWarning = "Warning: This is a non-urgent request ({$req['urgency']} urgency). The system is about to allocate universal donor O- blood, but O- stock is low (only $oMinusStockCount unit(s) remaining). Consider finding an exact {$req['group_name']} match instead to conserve universal donor blood.";
-            }
-        }
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -243,20 +181,70 @@ if ($req && $req['status'] === 'Pending') {
 <title>Review Request #<?= $requestId ?> — HemoLink</title>
 <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/theme.css">
 <style>
-  body { margin: 0; }
-  .main-inner { max-width: 640px; }
-  .card { padding: 28px; }
-  h1 { font-size: 20px; margin: 0 0 20px; }
-  dl { display: grid; grid-template-columns: 140px 1fr; row-gap: 8px; }
-  dt { font-weight: 600; color: var(--muted); }
-  form { display: inline; }
-  button { padding: 9px 18px; border: none; color: #fff; margin-right: 8px; }
-  .approve { background: var(--green); }
-  .approve:hover { background: #14532d; }
-  .reject { background: var(--red); }
-  .reject:hover { background: var(--red-dk); }
-  .fulfill { background: var(--blue); }
-  .fulfill:hover { background: #1e3a8a; }
+    /*CSS*/
+  body { 
+    margin: 0; 
+    }
+
+  .main-inner { 
+    max-width: 640px; 
+}
+
+  .card { 
+    padding: 28px; 
+}
+
+  h1 { 
+    font-size: 20px; 
+    margin: 0 0 20px; 
+}
+
+  dl { 
+    display: grid; 
+    grid-template-columns: 140px 1fr; 
+    row-gap: 8px; 
+}
+
+  dt { 
+    font-weight: 600; 
+    color: var(--muted); 
+}
+
+  form { 
+    display: inline; 
+}
+
+  button { 
+    padding: 9px 18px; 
+    border: none; 
+    color: #fff; 
+    margin-right: 8px; 
+}
+
+  .approve { 
+    background: var(--green); 
+}
+
+  .approve:hover { 
+    background: #14532d; 
+}
+
+  .reject { 
+    background: var(--red); 
+}
+
+  .reject:hover { 
+    background: var(--red-dk); 
+}
+
+  .fulfill { 
+    background: var(--blue); 
+}
+
+  .fulfill:hover { 
+    background: #1e3a8a; 
+}
+
 </style>
 </head>
 <body>
@@ -278,50 +266,14 @@ if ($req && $req['status'] === 'Pending') {
     <dt>Patient</dt><dd><?= htmlspecialchars($req['patient_name']) ?></dd>
     <dt>Hospital</dt><dd><?= htmlspecialchars($req['hospital_name']) ?></dd>
     <dt>Doctor</dt><dd><?= htmlspecialchars($req['doctor_name']) ?></dd>
-    <dt>Blood Group</dt>
-    <dd>
-      <?= htmlspecialchars($req['group_name']) ?>
-      <?php
-        $compList = $compatibility[$req['group_name']] ?? [$req['group_name']];
-        echo ' <span style="font-size: 0.8rem; color: #666;">(Compatible Donors: ' . implode(', ', $compList) . ')</span>';
-      ?>
-    </dd>
+    <dt>Blood Group</dt><dd><?= htmlspecialchars($req['group_name']) ?></dd>
+    <dt>Compatible Donors</dt><dd><?= htmlspecialchars(implode(', ', $compatibility[$req['group_name']] ?? [$req['group_name']])) ?></dd>
     <dt>Component</dt><dd><?= htmlspecialchars($req['component']) ?></dd>
     <dt>Units Needed</dt><dd><?= (int)$req['units_needed'] ?></dd>
     <dt>Urgency</dt><dd><?= htmlspecialchars($req['urgency']) ?></dd>
     <dt>Status</dt><dd><?= htmlspecialchars($req['status']) ?></dd>
     <dt>Notes</dt><dd><?= htmlspecialchars($req['notes'] ?? '—') ?></dd>
   </dl>
-
-  <?php if ($req['status'] === 'Processing' || $req['status'] === 'Fulfilled'): ?>
-    <?php
-      $reservedUnits = $db->prepare("
-          SELECT bu.unit_id, bg.group_name, bu.component, bu.volume_ml, bb.name AS bank_name, t.outcome
-          FROM transfusion t
-          JOIN blood_unit bu ON bu.unit_id = t.unit_id
-          JOIN blood_groups bg ON bg.group_id = bu.group_id
-          JOIN blood_bank bb ON bb.bank_id = bu.bank_id
-          WHERE t.request_id = :rid
-      ");
-      $reservedUnits->execute([':rid' => $requestId]);
-      $resUnits = $reservedUnits->fetchAll();
-    ?>
-    <?php if (!empty($resUnits)): ?>
-      <div style="margin-top: 20px; border-top: 1px dashed #f0d9d5; padding-top: 15px;">
-        <h3 style="font-size: 0.95rem; margin: 0 0 8px; color: #c0392b;">Linked Blood Units:</h3>
-        <ul style="margin: 0 0 0 20px; padding: 0; font-size: 0.85rem; line-height: 1.6;">
-          <?php foreach ($resUnits as $u): ?>
-            <li>
-              <strong>Unit #<?= $u['unit_id'] ?></strong>: 
-              <?= htmlspecialchars($u['group_name']) ?> <?= htmlspecialchars($u['component']) ?> (<?= $u['volume_ml'] ?> ml) 
-              from <em><?= htmlspecialchars($u['bank_name']) ?></em> 
-              [Status: <?= htmlspecialchars($u['outcome']) ?>]
-            </li>
-          <?php endforeach; ?>
-        </ul>
-      </div>
-    <?php endif; ?>
-  <?php endif; ?>
 
   <form method="POST" style="margin-top: 20px;">
     <input type="hidden" name="request_id" value="<?= $requestId ?>">
@@ -330,7 +282,6 @@ if ($req && $req['status'] === 'Pending') {
       <button class="reject" name="action" value="reject">Reject</button>
     <?php elseif ($req['status'] === 'Processing'): ?>
       <button class="fulfill" name="action" value="fulfill">Mark Fulfilled (transfused)</button>
-      <button class="reject" name="action" value="release">Cancel &amp; Release Units</button>
     <?php else: ?>
       <p><em>No further action available for status "<?= htmlspecialchars($req['status']) ?>".</em></p>
     <?php endif; ?>
