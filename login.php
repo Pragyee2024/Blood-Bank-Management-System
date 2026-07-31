@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="brand">🩸 HemoLink</div>
     <?php if ($as === 'donor'): ?>
       <h2>Welcome back, donor.</h2>
-      <p>Sign in to update your profile and see your donation history — every unit you give is tracked here.</p>
+      <p>Sign in to update your profile and see your donation history every unit you give is tracked here.</p>
     <?php elseif ($as === 'staff'): ?>
       <h2>Staff &amp; admin access.</h2>
       <p>Sign in to review requests, manage approvals, and keep the inventory dashboard up to date.</p>
