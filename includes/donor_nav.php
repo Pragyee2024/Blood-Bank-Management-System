@@ -1,6 +1,4 @@
 <?php
-// Static left sidebar for donor pages (profile, history).
-// Include as the FIRST child inside <div class="app-shell">.
 $__current = basename($_SERVER['SCRIPT_NAME']);
 ?>
 <aside class="sidebar">
@@ -11,3 +9,4 @@ $__current = basename($_SERVER['SCRIPT_NAME']);
     <a class="side-link side-logout" href="<?= BASE_URL ?>logout.php">Logout</a>
   </div>
 </aside>
+ 

@@ -1,9 +1,3 @@
-<?php
-// Shared top nav for admin/staff pages (dashboard, requests, approve).
-// Include AFTER require_login() has set $user, from inside <div class="wrap">.
-// Paths are root-relative so this renders correctly whether the including
-// page lives in /admin/ or /requests/.
-?>
 <nav>
   <div><strong>🩸 Blood Bank</strong></div>
   <div>
