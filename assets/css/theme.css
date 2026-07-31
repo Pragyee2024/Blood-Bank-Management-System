@@ -257,7 +257,9 @@ button:active, .btn:active, a.btn:active { transform: translateY(1px); }
 .main { 
   flex: 1; 
   min-width: 0; 
-  padding: 32px; 
+  padding: 32px;
+  display: flex;
+  align-items: center;
 }
 
 .main-inner { 
