@@ -41,6 +41,7 @@ body {
   font-family: var(--sans);
   color: var(--ink);
   background: var(--surface);
+  margin:0;
 }
 
 a { color: var(--red); }
