@@ -63,6 +63,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   .main-inner { max-width: 640px; }
   .card { padding: 28px; }
   h1 { font-size: 20px; margin: 0 0 20px; }
+  label { display: block; margin-top: 14px; font-size: .9rem; }
+  input, select, textarea { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+  button { margin-top: 20px; padding: 10px 18px; border: none; background: var(--red); color: #fff; }
+  button:hover { background: var(--red-dk); }
   .row { display: flex; gap: 12px; }
   .row > div { flex: 1; }
 </style>
